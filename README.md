@@ -46,8 +46,8 @@ Our mission is to increase earthquake awareness and promote disaster preparednes
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/SupravoCoder/Supravo-Biswas.git
-   cd Supravo-Biswas
+   git clone https://github.com/SupravoCoder/Bhukamp.git
+   cd Bhukamp
    ```
 
 2. **Install dependencies**
@@ -169,7 +169,7 @@ We welcome contributions! Please feel free to submit a Pull Request. For major c
 
 - **Email**: supravo.biswas@example.com
 - **GitHub**: [@SupravoCoder](https://github.com/SupravoCoder)
-- **Project Link**: [https://github.com/SupravoCoder/Supravo-Biswas](https://github.com/SupravoCoder/Supravo-Biswas)
+- **Project Link**: [https://github.com/SupravoCoder/Bhukamp](https://github.com/SupravoCoder/Bhukamp)
 
 ## 🙏 Acknowledgments
 
