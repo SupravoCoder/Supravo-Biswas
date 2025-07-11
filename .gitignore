@@ -105,6 +105,7 @@ dmypy.json
 
 # Streamlit
 .streamlit/
+!.streamlit/config.toml
 
 # VS Code
 .vscode/
