@@ -1,0 +1,4 @@
+prediction_date,predicted_magnitude,earthquake_probability,region,regional_zone,model_type,risk_category,latitude,longitude
+2025-07-11,5.1,0.68,India,Himalayan,PINN-25Year,High,30.3165,78.0322
+2025-07-11,4.3,0.45,India,Central,Random Forest,Medium,23.2599,77.4126
+2025-07-12,5.8,0.82,India,South,PINN-25Year,High,11.1271,78.6569

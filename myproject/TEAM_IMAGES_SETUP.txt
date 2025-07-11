@@ -1,0 +1,32 @@
+🖼️ TEAM IMAGES SETUP INSTRUCTIONS
+==========================================
+
+📁 Image Directory: 
+   myproject/static/images/team/
+
+📝 Required Image Files:
+   1. suvanjan_das.jpg
+   2. abir_saha.jpg  
+   3. arja_banerjee.jpg
+   4. sayan_rana.jpg
+   5. iqbal_shaikh.jpg
+
+⚙️ Image Specifications:
+   - Format: JPG, PNG, or JPEG
+   - Size: 400x400px+ (square preferred)
+   - Quality: High resolution
+   - Style: Professional headshots
+
+🔄 How It Works:
+   - If image exists → Shows your photo
+   - If image missing → Shows placeholder with initials
+   - Automatic fallback system included
+
+🚀 To Add Your Images:
+   1. Save your team photos in the folder above
+   2. Use the exact filenames listed
+   3. Refresh the Streamlit app
+   4. Images will appear automatically!
+
+💡 Pro Tip: You can also change file extensions in the code 
+   (e.g., .jpg to .png) if needed.

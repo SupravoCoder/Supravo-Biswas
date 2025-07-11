@@ -1,0 +1,15 @@
+streamlit
+streamlit-lottie
+pandas
+numpy
+scikit-learn
+openpyxl
+requests
+folium
+streamlit-folium
+geopy
+datetime
+# Notification system dependencies
+schedule
+twilio
+sqlite3
