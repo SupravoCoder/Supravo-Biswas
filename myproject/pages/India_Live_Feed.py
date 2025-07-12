@@ -18,95 +18,137 @@ st.set_page_config(
 )
 
 # Styling
-st.markdown("""
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;700&display=swap');
-    html, body, .stApp {
-        height: 100%;
-        font-family: 'Roboto', sans-serif;
-        background: linear-gradient(-45deg, #4c0519, #801336, #c72c41, #ee4540);
-        background-size: 400% 400%;
-        animation: gradient 15s ease infinite;
-        color: #f8f8f8;
-    }
-    @keyframes gradient {
-        0% { background-position: 0% 50%; }
-        25% { background-position: 50% 0%; }
-        50% { background-position: 100% 50%; }
-        75% { background-position: 50% 100%; }
-        100% { background-position: 0% 50%; }
-    }
-    .live-indicator {
-        display: inline-block;
-        width: 12px;
-        height: 12px;
-        background-color: #ff0000;
-        border-radius: 50%;
-        animation: pulse 1.5s ease infinite;
-        margin-right: 8px;
-    }
-    @keyframes pulse {
-        0% { opacity: 1; }
-        50% { opacity: 0.4; }
-        100% { opacity: 1; }
-    }
-    .title-row {
-        display: flex;
-        align-items: center;
-        margin-bottom: 1rem;
-    }
-    .glass-container {
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(10px);
-        border-radius: 10px;
-        padding: 1.5rem;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-    .footer {
-        text-align: center;
-        font-size: 0.85em;
-        color: #cccccc;
-        margin-top: 40px;
-    }
-    .alert-box {
-        padding: 1rem;
-        border-radius: 8px;
-        margin-bottom: 1rem;
-    }
-    .alert-high {
-        background-color: rgba(220, 53, 69, 0.3);
-        border-left: 5px solid #dc3545;
-    }
-    .alert-medium {
-        background-color: rgba(255, 193, 7, 0.3);
-        border-left: 5px solid #ffc107;
-    }
-    .alert-low {
-        background-color: rgba(40, 167, 69, 0.3);
-        border-left: 5px solid #28a745;
-    }
-    .refresh-btn {
-        background-color: rgba(255, 255, 255, 0.2);
-        color: white;
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        padding: 0.5rem 1rem;
-        border-radius: 5px;
-        cursor: pointer;
-        transition: all 0.3s;
-    }
-    .refresh-btn:hover {
-        background-color: rgba(255, 255, 255, 0.3);
-    }
-</style>
-""", unsafe_allow_html=True)
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;700&display=swap');
 
-# Title with live indicator
-st.markdown("""
-<div class="title-row">
-    <div class="live-indicator"></div>
-    <h1>India Earthquake Live Feed</h1>
-</div>
-""", unsafe_allow_html=True)
+html, body, .stApp {
+    height: 100%;
+    font-family: 'Roboto', sans-serif;
+    background: linear-gradient(-45deg, #1b4332, #2d6a4f, #1f4e79, #40916c, #2563eb, #52b788, #3b82f6);
+    background-size: 400% 400%;
+    animation: smoothGradient 25s ease infinite;
+    color: #f8f8f8;
+    margin: 0;
+    padding: 0;
+}
+
+@keyframes smoothGradient {
+    0% { background-position: 0% 50%; }
+    25% { background-position: 50% 0%; }
+    50% { background-position: 100% 50%; }
+    75% { background-position: 50% 100%; }
+    100% { background-position: 0% 50%; }
+}
+
+.glass-container {
+    background: rgba(255, 255, 255, 0.16);
+    backdrop-filter: blur(12px);
+    border-radius: 15px;
+    padding: 1.5rem;
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+    border: 1px solid rgba(255, 255, 255, 0.13);
+    max-width: 900px;
+    margin: 2rem auto;
+}
+
+.title {
+    font-size: clamp(2.5em, 6vw, 3.5em);
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    animation: fadeIn 1.8s ease-out;
+    margin-bottom: 0.5em;
+}
+
+.subtitle {
+    font-size: clamp(1em, 2vw, 1.3em);
+    color: #e0e0e0;
+    margin-bottom: 1.5rem;
+    animation: fadeIn 2s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px);}
+    to   { opacity: 1; transform: translateY(0);}
+}
+
+/* Sidebar improvements */
+section[data-testid="stSidebar"] {
+    background: linear-gradient(-45deg, #1b4332, #2d6a4f, #40916c, #52b788, #1f4e79, #2563eb);
+    background-size: 400% 400%;
+    animation: smoothGradient 25s ease infinite;
+    color: #f8f8f8;
+    font-family: 'Roboto', sans-serif;
+    border-right: 1px solid rgba(255,255,255,0.12);
+    padding: 1rem;
+}
+
+section[data-testid="stSidebar"] * {
+    color: #f8f8f8 !important;
+}
+
+/* Form field enhancements */
+section[data-testid="stSidebar"] input,
+section[data-testid="stSidebar"] textarea,
+section[data-testid="stSidebar"] select {
+    background-color: rgba(255,255,255,0.13);
+    color: #fff !important;
+    border: 1px solid rgba(255,255,255,0.23);
+    border-radius: 8px;
+    margin-bottom: 0.7em;
+}
+
+/* Footer */
+.footer {
+    text-align: center;
+    font-size: 0.90em;
+    color: #cccccc;
+    margin-top: 2.5rem;
+}
+
+/* Plotly legend & map marker visibility */
+.js-plotly-plot .legend text,
+.js-plotly-plot .legend .legendtitle text {
+    fill: #000 !important;
+    font-weight: bold !important;
+    font-size: 14px !important;
+    text-shadow: 1px 1px 2px rgba(255,255,255,0.8) !important;
+}
+.js-plotly-plot .legend .legendtitle text {
+    font-size: 16px !important;
+}
+.js-plotly-plot .scattermapbox text {
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8) !important;
+    font-weight: bold !important;
+}
+
+/* Scrollbar styling (Webkit, Firefox, Edge) */
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(45deg, #40916c, #2563eb);
+    border-radius: 10px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+html {
+    scrollbar-width: thin;
+    scrollbar-color: #40916c #2563eb;
+}
+
+/* Lottie animation container */
+.st-lottie-container {
+    background-color: transparent !important;
+    box-shadow: none !important;
+}
+
+/* Make images and iframe responsive */
+img, iframe {
+    max-width: 100%;
+    height: auto;
+    border-radius: 12px;
+}
 
 st.markdown("Real-time monitoring of earthquake activity in India")
 
