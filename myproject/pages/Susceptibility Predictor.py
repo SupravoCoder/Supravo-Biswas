@@ -126,11 +126,11 @@ def load_resources():
     """Load ML models and data with robust error handling."""
     try:
         # Define file paths
-        model_path = os.path.join(MODELS_DIR, "C:\\Users\\Supravo Biswas\\Desktop\\Coding\\Python Coding\\StreamlitPython\\Susceptability_pred_ML\\Susceptability_pred_ML\\EarthquakePredictor.pkl")
-        scaler_fd_path = os.path.join(MODELS_DIR, "C:\\Users\\Supravo Biswas\\Desktop\\Coding\\Python Coding\\StreamlitPython\\Susceptability_pred_ML\\Susceptability_pred_ML\\fault_density_scaler.pkl")
-        scaler_hd_path = os.path.join(MODELS_DIR, "C:\\Users\\Supravo Biswas\\Desktop\\Coding\\Python Coding\\StreamlitPython\\Susceptability_pred_ML\\Susceptability_pred_ML\\hubdist_scaler.pkl")
-        scaler_mag_path = os.path.join(MODELS_DIR, "C:\\Users\\Supravo Biswas\\Desktop\\Coding\\Python Coding\\StreamlitPython\\Susceptability_pred_ML\\Susceptability_pred_ML\\mag_scaler.pkl")
-        data_path = os.path.join(MODELS_DIR, "C:\\Users\\Supravo Biswas\\Desktop\\Coding\\Python Coding\\StreamlitPython\\Susceptability_pred_ML\\Susceptability_pred_ML\\EarthquakeFeatures.csv")
+        model_path = os.path.join(MODELS_DIR, "EarthquakePredictor.pkl")
+        scaler_fd_path = os.path.join(MODELS_DIR, "fault_density_scaler.pkl")
+        scaler_hd_path = os.path.join(MODELS_DIR, "hubdist_scaler.pkl")
+        scaler_mag_path = os.path.join(MODELS_DIR, "mag_scaler.pkl")
+        data_path = os.path.join(MODELS_DIR, "EarthquakeFeatures.csv")
 
         # Check if files exist
         missing_files = []
