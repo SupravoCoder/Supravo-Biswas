@@ -12,4 +12,3 @@ datetime
 # Notification system dependencies
 schedule
 twilio
-sqlite3
