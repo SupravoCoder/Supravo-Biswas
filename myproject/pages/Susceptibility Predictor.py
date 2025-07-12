@@ -133,12 +133,14 @@ def load_resources():
         data_path = os.path.join(MODELS_DIR, "EarthquakeFeatures.csv")
 
         # Check if files exist
-        missing_files = []
-        for path, name in [(model_path, "C:\\Users\\Supravo Biswas\\Desktop\\Coding\\Python Coding\\StreamlitPython\\Susceptability_pred_ML\\Susceptability_pred_ML\\EarthquakePredictor.pkl"), 
-                          (scaler_fd_path, "C:\\Users\\Supravo Biswas\\Desktop\\Coding\\Python Coding\\StreamlitPython\\Susceptability_pred_ML\\Susceptability_pred_ML\\fault_density_scaler.pkl"),
-                          (scaler_hd_path, "C:\\Users\\Supravo Biswas\\Desktop\\Coding\\Python Coding\\StreamlitPython\\Susceptability_pred_ML\\Susceptability_pred_ML\\hubdist_scaler.pkl"),
-                          (scaler_mag_path, "C:\\Users\\Supravo Biswas\\Desktop\\Coding\\Python Coding\\StreamlitPython\\Susceptability_pred_ML\\Susceptability_pred_ML\\mag_scaler.pkl"),
-                          (data_path, "C:\\Users\\Supravo Biswas\\Desktop\\Coding\\Python Coding\\StreamlitPython\\Susceptability_pred_ML\\Susceptability_pred_ML\\EarthquakeFeatures.csv")]:
+            missing_files = []
+        file_paths = [
+            (model_path, "EarthquakePredictor.pkl"),
+            (scaler_fd_path, "fault_density_scaler.pkl"),
+            (scaler_hd_path, "hubdist_scaler.pkl"),
+            (scaler_mag_path, "mag_scaler.pkl"),
+            (data_path, "EarthquakeFeatures.csv")
+        ]
             if not os.path.exists(path):
                 missing_files.append(name)
         
