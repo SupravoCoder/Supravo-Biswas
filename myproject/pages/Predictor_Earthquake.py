@@ -18,7 +18,7 @@ except ImportError:
     KERAS_AVAILABLE = False
 
 # Centralized model and data paths
-MODELS_DIR = r"C:\Users\Supravo Biswas\Desktop\Coding\Python Coding\StreamlitPython\Susceptability_pred_ML\Susceptability_pred_ML\models\EarthquakeFeatures.csv"
+MODELS_DIR = os.path.join(os.path.dirname(__file__), "..", "models")
 LABELED_DATA_PATH = os.path.join(MODELS_DIR, "earthquakes_labeled.csv")
 FEATURES_DATA_PATH = os.path.join(MODELS_DIR, "EarthquakeFeatures.csv")
 
@@ -549,8 +549,9 @@ def main():
             st.markdown("*Visualize earthquake predictions from various ML models for the next 25-100 years*")
             
             # File paths for prediction data
-            main_path = r"C:\Users\Supravo Biswas\Desktop\Coding\Python Coding\StreamlitPython\myproject\data\future_earthquake_predictions_100years.csv"
-            pinn_path = r"C:\Users\Supravo Biswas\Desktop\Coding\Python Coding\StreamlitPython\myproject\data\future_earthquake_predictions_india_25years_2025_2050.csv"
+            data_dir = os.path.join(os.path.dirname(__file__), "..", "data")
+            main_path = os.path.join(data_dir, "future_earthquake_predictions_100years.csv")
+            pinn_path = os.path.join(data_dir, "future_earthquake_predictions_india_25years_2025_2050.csv")
             
             # Model-specific column mappings
             model_options = {

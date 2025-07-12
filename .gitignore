@@ -139,3 +139,6 @@ Desktop.ini
 
 # Static images (optional - uncomment if you want to exclude images)
 # static/images/
+
+# Test files
+test_*.py
