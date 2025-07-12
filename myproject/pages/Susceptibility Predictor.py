@@ -133,7 +133,7 @@ def load_resources():
         data_path = os.path.join(MODELS_DIR, "EarthquakeFeatures.csv")
 
         # Check if files exist
-            missing_files = []
+        missing_files = []
         file_paths = [
             (model_path, "EarthquakePredictor.pkl"),
             (scaler_fd_path, "fault_density_scaler.pkl"),
@@ -141,6 +141,8 @@ def load_resources():
             (scaler_mag_path, "mag_scaler.pkl"),
             (data_path, "EarthquakeFeatures.csv")
         ]
+        
+        for path, name in file_paths:
             if not os.path.exists(path):
                 missing_files.append(name)
         
