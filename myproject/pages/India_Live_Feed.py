@@ -17,7 +17,9 @@ st.set_page_config(
     layout="wide"
 )
 
-# Styling
+# Custom CSS styling
+st.markdown("""
+<style>
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;700&display=swap');
 
 html, body, .stApp {
@@ -71,6 +73,20 @@ html, body, .stApp {
     to   { opacity: 1; transform: translateY(0);}
 }
 
+.alert-box {
+    padding: 1rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+    border-left: 4px solid #ff6b6b;
+    background: rgba(255, 107, 107, 0.1);
+    color: #fff;
+}
+
+.alert-high {
+    border-left-color: #ff4757;
+    background: rgba(255, 71, 87, 0.15);
+}
+
 /* Sidebar improvements */
 section[data-testid="stSidebar"] {
     background: linear-gradient(-45deg, #1b4332, #2d6a4f, #40916c, #52b788, #1f4e79, #2563eb);
@@ -113,34 +129,33 @@ section[data-testid="stSidebar"] select {
     font-size: 14px !important;
     text-shadow: 1px 1px 2px rgba(255,255,255,0.8) !important;
 }
+
 .js-plotly-plot .legend .legendtitle text {
     font-size: 16px !important;
 }
+
 .js-plotly-plot .scattermapbox text {
     text-shadow: 2px 2px 4px rgba(0,0,0,0.8) !important;
     font-weight: bold !important;
 }
 
-/* Scrollbar styling (Webkit, Firefox, Edge) */
+/* Scrollbar styling */
 ::-webkit-scrollbar {
     width: 8px;
 }
+
 ::-webkit-scrollbar-thumb {
     background: linear-gradient(45deg, #40916c, #2563eb);
     border-radius: 10px;
 }
+
 ::-webkit-scrollbar-track {
     background: transparent;
 }
+
 html {
     scrollbar-width: thin;
     scrollbar-color: #40916c #2563eb;
-}
-
-/* Lottie animation container */
-.st-lottie-container {
-    background-color: transparent !important;
-    box-shadow: none !important;
 }
 
 /* Make images and iframe responsive */
@@ -149,8 +164,12 @@ img, iframe {
     height: auto;
     border-radius: 12px;
 }
+</style>
+""", unsafe_allow_html=True)
 
-st.markdown("Real-time monitoring of earthquake activity in India")
+# Main title
+st.markdown('<h1 class="title">🔴 India Earthquake Live Feed</h1>', unsafe_allow_html=True)
+st.markdown('<p class="subtitle">Real-time monitoring of earthquake activity in India</p>', unsafe_allow_html=True)
 
 # Current time display
 current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -182,7 +201,7 @@ def load_earthquake_data(source, uploaded_file=None):
                 "minmagnitude": 2.5
             }
             
-            response = requests.get(url, params=params)
+            response = requests.get(url, params=params, timeout=30)
             if response.status_code == 200:
                 data = response.json()
                 
@@ -227,7 +246,7 @@ def load_earthquake_data(source, uploaded_file=None):
                 "minmag": 2.5
             }
             
-            response = requests.get(url, params=params)
+            response = requests.get(url, params=params, timeout=30)
             if response.status_code == 200:
                 data = response.json()
                 
@@ -263,17 +282,19 @@ def load_earthquake_data(source, uploaded_file=None):
             possible_paths = [
                 Path("data/earthquake.csv"),
                 Path("myproject/data/earthquake.csv"),
-                Path(__file__).parent.parent / "data" / "earthquake.csv",
-                Path(__file__).parent.parent / "models" / "earthquake.csv",
+                Path(__file__).parent.parent / "data" / "earthquake.csv" if __file__ else Path("data/earthquake.csv"),
+                Path(__file__).parent.parent / "models" / "earthquake.csv" if __file__ else Path("models/earthquake.csv"),
                 Path("../data/earthquake.csv"),
-                Path("models/earthquake.csv")
+                Path("models/earthquake.csv"),
+                Path("earthquake.csv")
             ]
             
             for path in possible_paths:
                 if path.exists():
                     df = pd.read_csv(path)
-                    # Filter for India data
-                    df = df[df['place'].str.contains('India', case=False, na=False)]
+                    # Filter for India data if place column exists
+                    if 'place' in df.columns:
+                        df = df[df['place'].str.contains('India', case=False, na=False)]
                     # Convert time to datetime if needed
                     if 'time' in df.columns and not pd.api.types.is_datetime64_any_dtype(df['time']):
                         df['time'] = pd.to_datetime(df['time'], errors='coerce')
@@ -300,6 +321,9 @@ def load_earthquake_data(source, uploaded_file=None):
         
         return pd.DataFrame()  # Return empty DataFrame as fallback
         
+    except requests.RequestException as e:
+        st.error(f"Network error: {str(e)}")
+        return pd.DataFrame()
     except Exception as e:
         st.error(f"Error loading data: {str(e)}")
         return pd.DataFrame()
@@ -355,196 +379,197 @@ if df.empty:
 # Add refresh button
 if st.button("🔄 Refresh Data", key="refresh"):
     st.cache_data.clear()
-    st.experimental_rerun()
+    st.rerun()
 
 # Display summary metrics
-col1, col2, col3, col4 = st.columns(4)
-with col1:
-    st.metric("Recent Earthquakes", f"{len(df)}")
-with col2:
-    st.metric("Average Magnitude", f"{df['mag'].mean():.2f}")
-with col3:
-    st.metric("Max Magnitude", f"{df['mag'].max():.2f}")
-with col4:
-    recent_time = df['time'].max() if not df.empty else "N/A"
-    st.metric("Latest Update", recent_time)
+if not df.empty:
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Recent Earthquakes", f"{len(df)}")
+    with col2:
+        st.metric("Average Magnitude", f"{df['mag'].mean():.2f}")
+    with col3:
+        st.metric("Max Magnitude", f"{df['mag'].max():.2f}")
+    with col4:
+        recent_time = df['time'].max() if not df.empty else "N/A"
+        st.metric("Latest Update", recent_time)
 
-# Check for significant recent earthquakes (within last 24 hours)
-if not df.empty and 'time' in df.columns:
-    df['datetime'] = pd.to_datetime(df['time'])
-    recent_df = df[df['datetime'] > (datetime.datetime.now() - datetime.timedelta(hours=24))]
-    
-    if not recent_df.empty:
-        significant = recent_df[recent_df['mag'] >= 4.5]
-        if not significant.empty:
-            st.markdown("""
-            <div class="alert-box alert-high">
-                <h3>⚠️ Significant Earthquake Alert</h3>
-                <p>Significant earthquake activity detected in the last 24 hours</p>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            for _, quake in significant.iterrows():
-                st.markdown(f"""
-                <div class="glass-container">
-                    <h4>M{quake['mag']:.1f} - {quake['place']}</h4>
-                    <p>Time: {quake['time']}</p>
-                    <p>Depth: {quake['depth']} km</p>
+    # Check for significant recent earthquakes (within last 24 hours)
+    if 'time' in df.columns:
+        df['datetime'] = pd.to_datetime(df['time'], errors='coerce')
+        recent_df = df[df['datetime'] > (datetime.datetime.now() - datetime.timedelta(hours=24))]
+        
+        if not recent_df.empty:
+            significant = recent_df[recent_df['mag'] >= 4.5]
+            if not significant.empty:
+                st.markdown("""
+                <div class="alert-box alert-high">
+                    <h3>⚠️ Significant Earthquake Alert</h3>
+                    <p>Significant earthquake activity detected in the last 24 hours</p>
                 </div>
-                <br>
                 """, unsafe_allow_html=True)
+                
+                for _, quake in significant.iterrows():
+                    st.markdown(f"""
+                    <div class="glass-container">
+                        <h4>M{quake['mag']:.1f} - {quake['place']}</h4>
+                        <p>Time: {quake['time']}</p>
+                        <p>Depth: {quake['depth']} km</p>
+                    </div>
+                    <br>
+                    """, unsafe_allow_html=True)
 
-# Create tabs for different views
-tab1, tab2, tab3 = st.tabs(["🗺️ Map View", "📊 Recent Activity", "📋 Data Table"])
+    # Create tabs for different views
+    tab1, tab2, tab3 = st.tabs(["🗺️ Map View", "📊 Recent Activity", "📋 Data Table"])
 
-with tab1:
-    # Map of recent earthquakes
-    st.markdown("### Recent Earthquake Locations")
-    
-    # Create map
-    fig = px.scatter_mapbox(
-        df,
-        lat='latitude',
-        lon='longitude',
-        color='mag',
-        size='mag',
-        size_max=15,
-        zoom=4,
-        center={"lat": 20.5937, "lon": 78.9629},  # Center of India
-        hover_name='place',
-        hover_data=['time', 'mag', 'depth'],
-        color_continuous_scale='Inferno',
-        title="Recent Earthquakes in India"
-    )
-    
-    fig.update_layout(
-        mapbox_style="carto-darkmatter",
-        margin={"r":0, "t":30, "l":0, "b":0},
-        height=600
-    )
-    
-    st.plotly_chart(fig, use_container_width=True)
-    
-    # Add magnitude legend
-    st.markdown("""
-    ### Earthquake Magnitude Scale
-    - **< 3.0**: Very Minor - Generally not felt
-    - **3.0-3.9**: Minor - Felt by many people
-    - **4.0-4.9**: Light - Felt by everyone, minor damage
-    - **5.0-5.9**: Moderate - Slight damage to buildings
-    - **6.0-6.9**: Strong - Moderate damage in populated areas
-    - **≥ 7.0**: Major - Serious damage over large areas
-    """)
+    with tab1:
+        # Map of recent earthquakes
+        st.markdown("### Recent Earthquake Locations")
+        
+        # Create map
+        fig = px.scatter_mapbox(
+            df,
+            lat='latitude',
+            lon='longitude',
+            color='mag',
+            size='mag',
+            size_max=15,
+            zoom=4,
+            center={"lat": 20.5937, "lon": 78.9629},  # Center of India
+            hover_name='place',
+            hover_data=['time', 'mag', 'depth'],
+            color_continuous_scale='Inferno',
+            title="Recent Earthquakes in India"
+        )
+        
+        fig.update_layout(
+            mapbox_style="carto-darkmatter",
+            margin={"r":0, "t":30, "l":0, "b":0},
+            height=600
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # Add magnitude legend
+        st.markdown("""
+        ### Earthquake Magnitude Scale
+        - **< 3.0**: Very Minor - Generally not felt
+        - **3.0-3.9**: Minor - Felt by many people
+        - **4.0-4.9**: Light - Felt by everyone, minor damage
+        - **5.0-5.9**: Moderate - Slight damage to buildings
+        - **6.0-6.9**: Strong - Moderate damage in populated areas
+        - **≥ 7.0**: Major - Serious damage over large areas
+        """)
 
-with tab2:
-    # Recent activity charts
-    st.markdown("### Earthquake Activity - Last 30 Days")
-    
-    # Create magnitude timeline
-    if 'datetime' not in df.columns and 'time' in df.columns:
-        df['datetime'] = pd.to_datetime(df['time'])
-    
-    df_sorted = df.sort_values(by='datetime')
-    
-    fig2 = px.scatter(
-        df_sorted, 
-        x='datetime', 
-        y='mag',
-        color='mag',
-        size='mag',
-        color_continuous_scale='Inferno',
-        title="Earthquake Magnitudes Over Time",
-        labels={"datetime": "Date", "mag": "Magnitude"}
-    )
-    
-    fig2.update_layout(
-        xaxis_title="Date",
-        yaxis_title="Magnitude",
-        height=400,
-        plot_bgcolor='rgba(0,0,0,0.1)',
-        paper_bgcolor='rgba(0,0,0,0)',
-        font=dict(color="#f8f8f8")
-    )
-    
-    st.plotly_chart(fig2, use_container_width=True)
-    
-    # Magnitude distribution
-    fig3 = px.histogram(
-        df, 
-        x='mag',
-        nbins=20,
-        title="Distribution of Earthquake Magnitudes",
-        labels={"mag": "Magnitude", "count": "Number of Earthquakes"}
-    )
-    
-    fig3.update_layout(
-        xaxis_title="Magnitude",
-        yaxis_title="Count",
-        height=350,
-        plot_bgcolor='rgba(0,0,0,0.1)',
-        paper_bgcolor='rgba(0,0,0,0)',
-        font=dict(color="#f8f8f8")
-    )
-    
-    st.plotly_chart(fig3, use_container_width=True)
-    
-    # Depth vs Magnitude
-    fig4 = px.scatter(
-        df, 
-        x='depth', 
-        y='mag',
-        color='mag',
-        title="Depth vs Magnitude Relationship",
-        labels={"depth": "Depth (km)", "mag": "Magnitude"},
-        color_continuous_scale='Inferno'
-    )
-    
-    fig4.update_layout(
-        xaxis_title="Depth (km)",
-        yaxis_title="Magnitude",
-        height=400,
-        plot_bgcolor='rgba(0,0,0,0.1)',
-        paper_bgcolor='rgba(0,0,0,0)',
-        font=dict(color="#f8f8f8")
-    )
-    
-    st.plotly_chart(fig4, use_container_width=True)
+    with tab2:
+        # Recent activity charts
+        st.markdown("### Earthquake Activity - Last 30 Days")
+        
+        # Create magnitude timeline
+        if 'datetime' not in df.columns and 'time' in df.columns:
+            df['datetime'] = pd.to_datetime(df['time'], errors='coerce')
+        
+        df_sorted = df.sort_values(by='datetime')
+        
+        fig2 = px.scatter(
+            df_sorted, 
+            x='datetime', 
+            y='mag',
+            color='mag',
+            size='mag',
+            color_continuous_scale='Inferno',
+            title="Earthquake Magnitudes Over Time",
+            labels={"datetime": "Date", "mag": "Magnitude"}
+        )
+        
+        fig2.update_layout(
+            xaxis_title="Date",
+            yaxis_title="Magnitude",
+            height=400,
+            plot_bgcolor='rgba(0,0,0,0.1)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(color="#f8f8f8")
+        )
+        
+        st.plotly_chart(fig2, use_container_width=True)
+        
+        # Magnitude distribution
+        fig3 = px.histogram(
+            df, 
+            x='mag',
+            nbins=20,
+            title="Distribution of Earthquake Magnitudes",
+            labels={"mag": "Magnitude", "count": "Number of Earthquakes"}
+        )
+        
+        fig3.update_layout(
+            xaxis_title="Magnitude",
+            yaxis_title="Count",
+            height=350,
+            plot_bgcolor='rgba(0,0,0,0.1)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(color="#f8f8f8")
+        )
+        
+        st.plotly_chart(fig3, use_container_width=True)
+        
+        # Depth vs Magnitude
+        fig4 = px.scatter(
+            df, 
+            x='depth', 
+            y='mag',
+            color='mag',
+            title="Depth vs Magnitude Relationship",
+            labels={"depth": "Depth (km)", "mag": "Magnitude"},
+            color_continuous_scale='Inferno'
+        )
+        
+        fig4.update_layout(
+            xaxis_title="Depth (km)",
+            yaxis_title="Magnitude",
+            height=400,
+            plot_bgcolor='rgba(0,0,0,0.1)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(color="#f8f8f8")
+        )
+        
+        st.plotly_chart(fig4, use_container_width=True)
 
-with tab3:
-    # Data table view
-    st.markdown("### Earthquake Data Records")
-    
-    # Add search functionality
-    search_term = st.text_input("🔍 Search by location:", "")
-    
-    if search_term:
-        filtered_data = df[df['place'].str.contains(search_term, case=False)]
-    else:
-        filtered_data = df
-    
-    # Display data table
-    st.dataframe(
-        filtered_data.sort_values(by='time', ascending=False),
-        use_container_width=True,
-        height=500
-    )
-    
-    # Download option
-    csv_data = filtered_data.to_csv(index=False).encode('utf-8')
-    st.download_button(
-        label="📥 Download Current Data",
-        data=csv_data,
-        file_name=f"india_earthquakes_{datetime.datetime.now().strftime('%Y%m%d')}.csv",
-        mime="text/csv",
-    )
+    with tab3:
+        # Data table view
+        st.markdown("### Earthquake Data Records")
+        
+        # Add search functionality
+        search_term = st.text_input("🔍 Search by location:", "")
+        
+        if search_term:
+            filtered_data = df[df['place'].str.contains(search_term, case=False, na=False)]
+        else:
+            filtered_data = df
+        
+        # Display data table
+        st.dataframe(
+            filtered_data.sort_values(by='time', ascending=False),
+            use_container_width=True,
+            height=500
+        )
+        
+        # Download option
+        csv_data = filtered_data.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="📥 Download Current Data",
+            data=csv_data,
+            file_name=f"india_earthquakes_{datetime.datetime.now().strftime('%Y%m%d')}.csv",
+            mime="text/csv",
+        )
 
 # Footer
-st.markdown("""
+st.markdown(f"""
 <div class="footer">
-    <p>Data sources: USGS Earthquake API, EMSC, and local data | Last updated: {}</p>
+    <p>Data sources: USGS Earthquake API, EMSC, and local data | Last updated: {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
     <p>Note: This application is for educational purposes. For official earthquake information, please refer to national geological survey organizations.</p>
 </div>
-""".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")), unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
 # Add information about data refreshing
 st.sidebar.info("ℹ️ Live feed data is cached for 5 minutes. Click 'Refresh Data' to force an update.")
