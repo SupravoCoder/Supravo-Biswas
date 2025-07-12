@@ -18,6 +18,8 @@ st.set_page_config(
 )
 
 # Styling
+st.markdown("""
+<style>
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;700&display=swap');
 
 html, body, .stApp {
@@ -149,6 +151,8 @@ img, iframe {
     height: auto;
     border-radius: 12px;
 }
+</style>
+""", unsafe_allow_html=True)
 
 st.markdown("Real-time monitoring of earthquake activity in India")
 
