@@ -142,7 +142,8 @@ class EarthquakeNotificationSystem:
             return subscriber_id
             
         except sqlite3.IntegrityError:
-            logger.error(f"Subscriber with phone number {phone_number} already exists")
+            masked_phone_number = f"{phone_number[:2]}{'*' * (len(phone_number) - 6)}{phone_number[-4:]}"
+            logger.error(f"Subscriber with phone number {masked_phone_number} already exists")
             return None
         finally:
             conn.close()
