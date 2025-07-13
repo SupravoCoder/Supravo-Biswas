@@ -812,42 +812,42 @@ with st.container():
         {
             "name": "Supravo Biswas",
             "role": "🔬 Full Pipeline Developer & ML Contributor",
-            "avatar": "static/images/team/supravo_biswas.jpg",
-            "description": "Developed the complete pipeline for the Streamlit web app, integrating all components for seamless user experience and analytics. Contributed to machine learning model development, data analysis, and validation, ensuring robust and scalable earthquake prediction workflows.",
+            "avatar": "myproject/static/images/team/supravo_biswas.jpg",
+            "description": "Developed most of the pipeline for the Streamlit web app, integrating all components for seamless user experience and analytics. Contributed to machine learning model development, data analysis, and validation, ensuring robust and scalable earthquake prediction workflows.",
             "skills": ["Streamlit", "Full Stack Development", "Pipeline Engineering", "Machine Learning", "Research", "Data Analysis", "Seismic Modeling", "Python", "Statistical Analysis", "Scientific Computing"]
         },
         {
             "name": "Suvanjan Das",
             "role": "🧠 Lead AI/ML Engineer & Project Lead",
-            "avatar": "static/images/team/suvanjan_das.jpg",
+            "avatar": "myproject/static/images/team/suvanjan_das.jpg",
             "description": "Expert in machine learning algorithms and seismic data analysis. Leads the development of predictive models for earthquake forecasting using Random Forest and PINN algorithms.",
             "skills": ["Python", "TensorFlow", "Scikit-learn", "Data Science", "Streamlit", "Geospatial Analysis"]
         },
         {
             "name": "Abir Saha",
             "role": "🌍 ML Model Validator, Feature Engineer & Web Contributor",
-            "avatar": "static/images/team/abir_saha.jpg",
+            "avatar": "myproject/static/images/team/abir_saha.jpg",
             "description": "Played a key role in refining and validating the machine learning models for earthquake prediction. Improved the model outputs by correcting configurations, optimizing feature selection, and ensuring realistic results. Also developed a Random Forest-based susceptibility predictor, contributed to parts of the web app, and identified essential data features to enhance prediction quality.",
-            "skills": ["Seismology", "Geophysics", "Risk Assessment", "Research", "Data Validation", "Feature Engineering", "ML Validation", "Web Development", "Random Forest"]
+            "skills": ["Seismology", "Geophysics", "Risk Assessment", "Research", "Data Validation", "Streamlit", "Feature Engineering", "ML Validation", "Web Development", "Python"]
         },
         {
             "name": "Arja Banerjee",
             "role": " ML Researcher, Literature Reviewer & Idea Originator",
-            "avatar": "static/images/team/arja_banerjee.jpg",
+            "avatar": "myproject/static/images/team/arja_banerjee.jpg",
             "description": "Selected and originated the core idea for Bhukamp, conducted extensive literature review, and led foundational research. Contributed to machine learning model development and ensured the scientific rigor of the project.",
             "skills": ["ML Research", "Literature Review", "Idea Selection", "Python", "Research", "Data Analysis", "Scientific Writing", "Project Initiation", "Seismic Modeling"]
         },
         {
             "name": "Sayan Rana",
             "role": "📊 Data Scientist & ML Contributor",
-            "avatar": "static/images/team/sayan_rana.jpg",
+            "avatar": "myproject/static/images/team/sayan_rana.jpg",
             "description": "Specializes in feature engineering, statistical analysis of seismic patterns, and machine learning model development. Responsible for data preprocessing, model evaluation metrics, and ensuring robust ML workflows.",
             "skills": ["Statistics", "Pandas", "NumPy", "Data Visualization", "Feature Engineering", "Model Validation", "Machine Learning", "Python"]
         },
         {
             "name": "Iqbal Shaikh",
             "role": "🎨 ML Contributor",
-            "avatar": "static/images/team/iqbal_shaikh.jpg",
+            "avatar": "myproject/static/images/team/iqbal_shaikh.jpg",
             "description": "Contributed to machine learning workflows and ensured the platform is user-friendly for emergency responders and researchers.",
             "skills": ["Machine Learning", "Python", "Figma", "Design Systems", "Accessibility", "User Research", "Prototyping", "CSS"]
         }
