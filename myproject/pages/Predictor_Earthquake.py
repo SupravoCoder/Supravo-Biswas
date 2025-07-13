@@ -18,7 +18,7 @@ except ImportError:
     KERAS_AVAILABLE = False
 
 # Centralized model and data paths
-MODELS_DIR = r"C:\Users\Supravo Biswas\Desktop\Coding\Python Coding\StreamlitPython\Susceptability_pred_ML\Susceptability_pred_ML\models"
+MODELS_DIR = r"C:\Users\Supravo Biswas\Desktop\Coding\Python Coding\StreamlitPython\data\EarthquakeFeatures.csv"
 LABELED_DATA_PATH = os.path.join(MODELS_DIR, "earthquakes_labeled.csv")
 FEATURES_DATA_PATH = os.path.join(MODELS_DIR, "EarthquakeFeatures.csv")
 

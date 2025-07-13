@@ -1,4 +1,4 @@
-import streamlit as st
+mport streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
@@ -397,3 +397,4 @@ if place:
                         st.warning("⚠️ No valid columns found to display.")
             else:
                 st.warning("⚠️ Fault name not found in this record.")
+

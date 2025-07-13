@@ -12,4 +12,5 @@ datetime
 # Notification system dependencies
 schedule
 twilio
-sqlite3
+seaborn
+plotly
