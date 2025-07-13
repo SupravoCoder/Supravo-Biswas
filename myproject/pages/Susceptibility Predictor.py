@@ -15,8 +15,7 @@ st.title("🌍 Earthquake Susceptibility Predictor")
 st.write("Enter a place name to see its safety rating (0–5) and classification as **Safe**, **Moderate**, or **Unsafe** based on fault density, magnitude, and distance.")
 
 # Centralized model and data paths
-# Use relative paths that work on both local and cloud deployments
-MODELS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "models")
+MODELS_DIR = r"myproject/models"
 
 # -----------------------------
 # Custom CSS
