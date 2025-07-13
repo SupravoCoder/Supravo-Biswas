@@ -133,7 +133,7 @@ def load_resources():
         data_path = os.path.join(MODELS_DIR, "EarthquakeFeatures.csv")
 
         # Check if files exist
-            missing_files = []
+        missing_files = []
         file_paths = [
             (model_path, "EarthquakePredictor.pkl"),
             (scaler_fd_path, "fault_density_scaler.pkl"),
@@ -141,6 +141,8 @@ def load_resources():
             (scaler_mag_path, "mag_scaler.pkl"),
             (data_path, "EarthquakeFeatures.csv")
         ]
+        
+        for path, name in file_paths:
             if not os.path.exists(path):
                 missing_files.append(name)
         
@@ -163,6 +165,13 @@ def load_resources():
         st.error(f"❌ Error loading resources: {str(e)}")
         st.error("Please check file paths and ensure all required files are available.")
         st.stop()
+
+# Define landslide-prone keywords
+landslide_prone_keywords = [
+    "Joshimath", "Badrinath", "Kedarnath", "Chamoli", "Rudraprayag", "Pithoragarh", "Almora", "Nainital",
+    "Manali", "Kullu", "Chamba", "Dharamshala", "Kangra",
+    "Gangtok", "Darjeeling", "Dehradun", "Mussoorie", "Rishikesh", "Haridwar", "Tehri"
+]
 
 # Load resources with error handling
 try:
@@ -189,64 +198,33 @@ if place:
         st.error("❌ Place not found. Please enter a valid location.")
     else:
         lat, lon = location.latitude, location.longitude
-        st.success(f"📌 Found: {location.address}")
-        st.write(f"🛍 Coordinates: `{lat:.4f}, {lon:.4f}`")
-
-        landslide_prone_keywords = [
-        "Joshimath", "Badrinath", "Kedarnath", "Chamoli", "Rudraprayag", "Pithoragarh", "Almora", "Nainital",
-        "Manali", "Kullu", "Chamba", "Dharamshala", "Kangra",
-        "Baramulla", "Pahalgam", "Uri", "Banihal", "Ramban",
-        "Gangtok", "Mangan", "Chungthang", "Cherrapunji", "East Khasi Hills",
-        "Kohima", "Wokha", "Itanagar", "Tawang", "Ziro",
-        "Dima Hasao", "Karbi Anglong",
-        "Idukki", "Wayanad", "Munnar", "Pathanamthitta", "Kottayam", "Ernakulam",
-        "Kodagu", "Coorg", "Chikmagalur", "Uttara Kannada",
-        "Nilgiris", "Ooty", "Coonoor",
-        "Darjeeling"," Dehradun"," Mussoorie", "Rishikesh", "Haridwar", "Tehri"
-        ]
+        st.success(f"✅ **{place}** found at coordinates: ({lat:.4f}, {lon:.4f})")
 
         # -----------------------------
-        # Match top 3 nearest faults
+        # Data processing
         # -----------------------------
-        lat_col = next((col for col in df.columns if col.lower().startswith('lat')), None)
-        lon_col = next((col for col in df.columns if col.lower().startswith('lon') or 'long' in col.lower()), None)
-        fault_name_col = next((col for col in df.columns if 'hubname' in col.lower()), None)
-        mag_col = next((col for col in df.columns if col.lower().startswith('mag')), None)
-
-        if not lat_col or not lon_col:
-            st.error("❌ Could not find latitude/longitude columns in the dataset.")
-        else:
-            df['distance_to_input'] = np.sqrt((df[lat_col] - lat)**2 + (df[lon_col] - lon)**2)
-            top3 = df.nsmallest(3, 'distance_to_input')
-            nearest = top3.iloc[0]  # use distance from nearest
-            hub_dist = nearest['HubDist']
-
-            # pick first fault with name
-            fault_name = None
-            if fault_name_col:
-                named_faults = top3[top3[fault_name_col].notna()]
-                if not named_faults.empty:
-                    valid_fault_row = named_faults.iloc[0]
-                    fault_name = valid_fault_row[fault_name_col]
-                else:
-                    valid_fault_row = top3.iloc[0]  # fallback to nearest even if no name
-                    fault_name = valid_fault_row.get(fault_name_col) if fault_name_col else None
-            else:
-                valid_fault_row = top3.iloc[0]
-                fault_name = None
-
-            # extract magnitude and fault density from chosen fault
-            if fault_name and fault_name_col:
-                fault_quakes = df[df[fault_name_col] == fault_name]
-                mag = fault_quakes[mag_col].nlargest(4).mean() if not fault_quakes.empty and mag_col else 0.0
-                fault_density = fault_quakes['FaultDensity'].mean() if not fault_quakes.empty and 'FaultDensity' in fault_quakes.columns else np.nan
-            else:
-                mag, fault_density = 0.0, np.nan
-
-            # -----------------------------
-            # Normalize features and predict
-            # -----------------------------
-            fault_density_norm = 0.0 if pd.isna(fault_density) else scaler_fd.transform([[fault_density]])[0][0]
+        if not df.empty:
+            # Find nearest point
+            distances = np.sqrt((df['LAT'] - lat)**2 + (df['LONG_'] - lon)**2)
+            nearest_idx = distances.idxmin()
+            nearest_point = df.iloc[nearest_idx]
+            
+            # Extract features
+            mag = nearest_point.get('MAGMB', 3.0)
+            hub_dist = nearest_point.get('HubDist', 50.0)
+            fault_density = nearest_point.get('FaultDensity', 0.0)
+            fault_name = nearest_point.get('HubName', 'Unknown')
+            
+            # Handle NaN values
+            if pd.isna(mag):
+                mag = 3.0
+            if pd.isna(hub_dist):
+                hub_dist = 50.0
+            if pd.isna(fault_density):
+                fault_density = 0.0
+            
+            # Scale features
+            fault_density_norm = scaler_fd.transform([[fault_density]])[0][0]
             hub_dist_norm = scaler_hd.transform([[hub_dist]])[0][0]
             mag_norm = scaler_mag.transform([[mag]])[0][0]
             
@@ -259,12 +237,12 @@ if place:
             terrain_penalty = 1 if terrain_risky else 0
 
             X_input = pd.DataFrame([{
-            'mag': mag,
-            'HubDist': hub_dist,
-            'fault_density_norm': fault_density_norm,
-            'has_fault_density': has_fault_density,
-            'terrain_penalty': terrain_penalty
-        }])
+                'mag': mag,
+                'HubDist': hub_dist,
+                'fault_density_norm': fault_density_norm,
+                'has_fault_density': has_fault_density,
+                'terrain_penalty': terrain_penalty
+            }])
 
             prediction = model.predict(X_input)[0]
             label = "❌ **Unsafe**" if prediction == 2 else ("⚠️ **Moderate**" if prediction == 1 else "✅ **Safe**")
@@ -273,90 +251,27 @@ if place:
             # Compute risk-based safety rating
             # -----------------------------
             risk = (
-                0.3 * (1 - hub_dist_norm) +
-                0.3 * fault_density_norm +
-                0.4 * mag_norm
+                0.4 * (mag / 10.0) +
+                0.3 * (1 - min(hub_dist / 100.0, 1)) +
+                0.2 * min(fault_density * 10, 1) +
+                0.1 * terrain_penalty
             )
-
-            if pd.isna(fault_density) or fault_density <= 0.05:
-                if hub_dist <= 50000 or mag >= 5.5:
-                    risk += 0.4
-            if hub_dist <= 100000 or mag >= 4.0:
-                    risk += 0.2
-            if mag >= 3.5 or hub_dist <= 150000:
-                    risk += 0.1
-
-            # -------------------------------
-            # Terrain-based landslide penalty
-            # -------------------------------
-
-            # Check if input place or hub name matches landslide-prone keywords
-            place_lower = place.lower()
-            hub_name = ""
-            if fault_name_col and valid_fault_row is not None:
-                hub_name = valid_fault_row.get(fault_name_col, "") or ""
-            hub_name_lower = str(hub_name).lower()
-
-            terrain_risky = any(keyword.lower() in place_lower or keyword.lower() in hub_name_lower
-                    for keyword in landslide_prone_keywords)
-
-            if terrain_risky:
-                risk += 0.15
-                
-            rating = round(max(0.0, min(5.0, 5.0 - 5.0 * risk)), 2)
+            rating = min(risk * 5, 5.0)
 
             # -----------------------------
-            # Output
+            # Display results
             # -----------------------------
-            # -----------------------------
-            # Map Visualization with Plotly
-            # -----------------------------
-            st.subheader("🗺️ Map: Entered Location & Nearest Fault Hub")
-            entered_color = 'green' if rating >= 2.5 else ('orange' if rating >= 1.25 else 'red')
+            st.markdown("---")
+            st.subheader("📊 **Earthquake Susceptibility Analysis**")
             
-            # Create map data with error handling
-            map_data = [{
-                'name': place,
-                'latitude': lat,
-                'longitude': lon,
-                'type': '📍 Entered Location',
-                'rating': f"{rating}/5.0",
-                'color': entered_color,
-                'hover': f"📍 {place}<br>Rating: {rating}/5.0"
-            }]
-            
-            # Add fault hub if data is available
-            if valid_fault_row is not None and lat_col and lon_col:
-                try:
-                    fault_lat = valid_fault_row[lat_col]
-                    fault_lon = valid_fault_row[lon_col]
-                    map_data.append({
-                        'name': fault_name if fault_name else "Unknown Fault",
-                        'latitude': fault_lat,
-                        'longitude': fault_lon,
-                        'type': '🌋 Fault Hub',
-                        'color': 'gray',
-                        'hover': f"🌋 {fault_name if fault_name else 'Unknown Fault'}"
-                    })
-                except (KeyError, IndexError):
-                    st.warning("⚠️ Could not display fault hub location on map.")
-            
-            map_df = pd.DataFrame(map_data)
-
+            # Create map
             fig = px.scatter_mapbox(
-            map_df,
-            lat="latitude",
-            lon="longitude",
-            color="type",
-            hover_name="name",
-            zoom=5,
-            height=500,
-            color_discrete_map={
-                '📍 Entered Location': entered_color,
-                '🌋 Fault Hub': 'cyan' 
-            }
-        )
-
+                lat=[lat], lon=[lon], 
+                color_discrete_sequence=["red"], 
+                size=[10], 
+                hover_name=[place],
+                zoom=8, height=400
+            )
             fig.update_layout(mapbox_style="open-street-map")
             fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
             st.plotly_chart(fig, use_container_width=True)
@@ -365,13 +280,14 @@ if place:
             st.metric("📏 Distance from Fault Hub", f"{hub_dist:.2f} m")
             st.metric("🔥 Fault Density", f"{fault_density:.4f}")
             st.metric("📊 Estimated Magnitude", f"{mag:.2f}")
-            st.metric("💡 Safety Rating", f"{rating}/5.0")
+            st.metric("💡 Safety Rating", f"{rating:.1f}/5.0")
             st.subheader("🧠 Model Prediction:")
             st.markdown(label)
 
             # -----------------------------
             # Earthquakes from same fault
             # -----------------------------
+            fault_name_col = 'HubName'
             if fault_name and fault_name_col:
                 st.markdown("### 🗒️ Earthquakes on Same Fault")
                 st.markdown(f"**Nearest Fault Name:** `{fault_name}`")
@@ -379,22 +295,39 @@ if place:
                 related_quakes = df[df[fault_name_col] == fault_name]
 
                 if related_quakes.empty:
-                    st.info("No recorded earthquakes found for this fault.")
+                    st.info("No related earthquakes found on this fault.")
                 else:
-                    if 'time' in related_quakes.columns:
-                        related_quakes = related_quakes.sort_values('time', ascending=False)
-                    elif mag_col:
-                        related_quakes = related_quakes.sort_values(mag_col, ascending=False)
+                    st.write(f"Found **{len(related_quakes)}** earthquakes on the same fault:")
+                    
+                    # Display summary statistics
+                    avg_mag = related_quakes['MAGMB'].mean()
+                    max_mag = related_quakes['MAGMB'].max()
+                    min_mag = related_quakes['MAGMB'].min()
+                    
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("Average Magnitude", f"{avg_mag:.2f}")
+                    with col2:
+                        st.metric("Maximum Magnitude", f"{max_mag:.2f}")
+                    with col3:
+                        st.metric("Minimum Magnitude", f"{min_mag:.2f}")
+                    
+                    # Show recent earthquakes
+                    st.subheader("Recent Earthquakes on Same Fault")
+                    display_cols = ['YR', 'MO', 'DT', 'LAT', 'LONG_', 'MAGMB', 'DEPTH_KM']
+                    available_cols = [col for col in display_cols if col in related_quakes.columns]
+                    
+                    if available_cols:
+                        st.dataframe(related_quakes[available_cols].head(10))
 
-                    cols_to_show = []
-                    if lat_col: cols_to_show.append(lat_col)
-                    if lon_col: cols_to_show.append(lon_col)
-                    if mag_col: cols_to_show.append(mag_col)
-                    if 'time' in related_quakes.columns: cols_to_show.append('time')
+        else:
+            st.error("❌ No earthquake data available for analysis.")
 
-                    if cols_to_show:
-                        st.dataframe(related_quakes[cols_to_show].head(5))
-                    else:
-                        st.warning("⚠️ No valid columns found to display.")
-            else:
-                st.warning("⚠️ Fault name not found in this record.")
+# -----------------------------
+# Footer
+# -----------------------------
+st.markdown("""
+<div class="footer">
+    <p>🌍 Bhukamp - Earthquake Susceptibility Predictor | Built with ❤️ for safer communities</p>
+</div>
+""", unsafe_allow_html=True)
