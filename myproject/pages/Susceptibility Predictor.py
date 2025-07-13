@@ -15,7 +15,7 @@ st.title("🌍 Earthquake Susceptibility Predictor")
 st.write("Enter a place name to see its safety rating (0–5) and classification as **Safe**, **Moderate**, or **Unsafe** based on fault density, magnitude, and distance.")
 
 # Centralized model and data paths
-MODELS_DIR = r"C:\Users\Supravo Biswas\Desktop\Coding\Python Coding\StreamlitPython\Susceptability_pred_ML\Susceptability_pred_ML\models"
+MODELS_DIR = r"C:\Users\Supravo Biswas\Desktop\Coding\Python Coding\StreamlitPython\Susceptability_pred_ML\Susceptability_pred_ML"
 
 # -----------------------------
 # Custom CSS
