@@ -18,7 +18,7 @@ except ImportError:
     KERAS_AVAILABLE = False
 
 # Centralized model and data paths
-MODELS_DIR = r"Bhukamp/Susceptability_pred_ML/Susceptability_pred_ML"
+MODELS_DIR = r"Susceptability_pred_ML/Susceptability_pred_ML"
 LABELED_DATA_PATH = os.path.join(MODELS_DIR, "earthquakes_labeled.csv")
 FEATURES_DATA_PATH = os.path.join(MODELS_DIR, "EarthquakeFeatures.csv")
 
