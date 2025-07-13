@@ -152,8 +152,15 @@ def load_resources():
             st.stop()
         
         # Load models and data
-        model_with_features = joblib.load(model_path)
-        model, expected_columns = model_with_features  # Unpack model and expected column order
+        model = joblib.load(model_path)
+        
+        # Handle case where model might be packed with expected columns
+        if isinstance(model, tuple) and len(model) == 2:
+            model, expected_columns = model
+        else:
+            # If it's just the model, define expected columns based on your feature engineering
+            expected_columns = ['mag', 'HubDist', 'fault_density_norm', 'has_fault_density', 'terrain_penalty']
+        
         scaler_fd = joblib.load(scaler_fd_path)
         scaler_hd = joblib.load(scaler_hd_path)
         scaler_mag = joblib.load(scaler_mag_path)
@@ -164,6 +171,14 @@ def load_resources():
     except Exception as e:
         st.error(f"❌ Error loading resources: {str(e)}")
         st.error("Please check file paths and ensure all required files are available.")
+        st.info("💡 **Debug info**: Make sure the following files exist in the specified directory:")
+        st.code(f"""
+        {MODELS_DIR}\\EarthquakePredictor.pkl
+        {MODELS_DIR}\\fault_density_scaler.pkl
+        {MODELS_DIR}\\hubdist_scaler.pkl
+        {MODELS_DIR}\\mag_scaler.pkl
+        {MODELS_DIR}\\EarthquakeFeatures.csv
+        """)
         st.stop()
 
 # Define landslide-prone keywords
@@ -176,8 +191,9 @@ landslide_prone_keywords = [
 # Load resources with error handling
 try:
     model, expected_columns, scaler_fd, scaler_hd, scaler_mag, df = load_resources()
-except:
-    st.error("Failed to load required models and data. Please check the setup.")
+    st.success("✅ All models and data loaded successfully!")
+except Exception as e:
+    st.error(f"❌ Failed to load required models and data: {str(e)}")
     st.stop()
 
 # -----------------------------
@@ -186,13 +202,17 @@ except:
 place = st.text_input("📍 Enter Place Name (e.g., Delhi, Guwahati):")
 
 if place:
-    geolocator = Nominatim(user_agent="streamlit_eq_predictor")
+    with st.spinner("🔍 Geocoding location..."):
+        geolocator = Nominatim(user_agent="streamlit_eq_predictor")
 
-    try:
-        location = geolocator.geocode(place, timeout=10)
-    except GeocoderTimedOut:
-        st.error("⏱️ Geocoding service timed out. Please try again.")
-        location = None
+        try:
+            location = geolocator.geocode(place, timeout=10)
+        except GeocoderTimedOut:
+            st.error("⏱️ Geocoding service timed out. Please try again.")
+            location = None
+        except Exception as e:
+            st.error(f"❌ Geocoding error: {str(e)}")
+            location = None
 
     if location is None:
         st.error("❌ Place not found. Please enter a valid location.")
@@ -209,116 +229,155 @@ if place:
             nearest_idx = distances.idxmin()
             nearest_point = df.iloc[nearest_idx]
             
-            # Extract features
+            # Extract features with better error handling
             mag = nearest_point.get('MAGMB', 3.0)
             hub_dist = nearest_point.get('HubDist', 50.0)
             fault_density = nearest_point.get('FaultDensity', 0.0)
             fault_name = nearest_point.get('HubName', 'Unknown')
             
-            # Handle NaN values
-            if pd.isna(mag):
-                mag = 3.0
-            if pd.isna(hub_dist):
-                hub_dist = 50.0
-            if pd.isna(fault_density):
-                fault_density = 0.0
+            # Handle NaN values more robustly
+            mag = 3.0 if pd.isna(mag) else float(mag)
+            hub_dist = 50.0 if pd.isna(hub_dist) else float(hub_dist)
+            fault_density = 0.0 if pd.isna(fault_density) else float(fault_density)
             
-            # Scale features
-            fault_density_norm = scaler_fd.transform([[fault_density]])[0][0]
-            hub_dist_norm = scaler_hd.transform([[hub_dist]])[0][0]
-            mag_norm = scaler_mag.transform([[mag]])[0][0]
-            
-            # Check for terrain risk
-            terrain_risky = any(
-                keyword.lower() in place.lower()
-                for keyword in landslide_prone_keywords
-            )
-            has_fault_density = 0 if pd.isna(fault_density) or fault_density < 0.05 else 1
-            terrain_penalty = 1 if terrain_risky else 0
+            try:
+                # Scale features
+                fault_density_norm = scaler_fd.transform([[fault_density]])[0][0]
+                hub_dist_norm = scaler_hd.transform([[hub_dist]])[0][0]
+                mag_norm = scaler_mag.transform([[mag]])[0][0]
+                
+                # Check for terrain risk
+                terrain_risky = any(
+                    keyword.lower() in place.lower()
+                    for keyword in landslide_prone_keywords
+                )
+                has_fault_density = 0 if pd.isna(fault_density) or fault_density < 0.05 else 1
+                terrain_penalty = 1 if terrain_risky else 0
 
-            X_input = pd.DataFrame([{
-                'mag': mag,
-                'HubDist': hub_dist,
-                'fault_density_norm': fault_density_norm,
-                'has_fault_density': has_fault_density,
-                'terrain_penalty': terrain_penalty
-            }])
+                # Create input dataframe with expected column order
+                X_input = pd.DataFrame([{
+                    'mag': mag,
+                    'HubDist': hub_dist,
+                    'fault_density_norm': fault_density_norm,
+                    'has_fault_density': has_fault_density,
+                    'terrain_penalty': terrain_penalty
+                }])
+                
+                # Ensure column order matches expected columns
+                X_input = X_input[expected_columns]
 
-            prediction = model.predict(X_input)[0]
-            label = "❌ **Unsafe**" if prediction == 2 else ("⚠️ **Moderate**" if prediction == 1 else "✅ **Safe**")
-
-            # -----------------------------
-            # Compute risk-based safety rating
-            # -----------------------------
-            risk = (
-                0.4 * (mag / 10.0) +
-                0.3 * (1 - min(hub_dist / 100.0, 1)) +
-                0.2 * min(fault_density * 10, 1) +
-                0.1 * terrain_penalty
-            )
-            rating = min(risk * 5, 5.0)
-
-            # -----------------------------
-            # Display results
-            # -----------------------------
-            st.markdown("---")
-            st.subheader("📊 **Earthquake Susceptibility Analysis**")
-            
-            # Create map
-            fig = px.scatter_mapbox(
-                lat=[lat], lon=[lon], 
-                color_discrete_sequence=["red"], 
-                size=[10], 
-                hover_name=[place],
-                zoom=8, height=400
-            )
-            fig.update_layout(mapbox_style="open-street-map")
-            fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
-            st.plotly_chart(fig, use_container_width=True)
-
-            st.markdown("---")
-            st.metric("📏 Distance from Fault Hub", f"{hub_dist:.2f} m")
-            st.metric("🔥 Fault Density", f"{fault_density:.4f}")
-            st.metric("📊 Estimated Magnitude", f"{mag:.2f}")
-            st.metric("💡 Safety Rating", f"{rating:.1f}/5.0")
-            st.subheader("🧠 Model Prediction:")
-            st.markdown(label)
-
-            # -----------------------------
-            # Earthquakes from same fault
-            # -----------------------------
-            fault_name_col = 'HubName'
-            if fault_name and fault_name_col:
-                st.markdown("### 🗒️ Earthquakes on Same Fault")
-                st.markdown(f"**Nearest Fault Name:** `{fault_name}`")
-
-                related_quakes = df[df[fault_name_col] == fault_name]
-
-                if related_quakes.empty:
-                    st.info("No related earthquakes found on this fault.")
+                # Make prediction
+                prediction = model.predict(X_input)[0]
+                
+                # Map prediction to labels
+                if prediction == 2:
+                    label = "❌ **Unsafe**"
+                    color = "red"
+                elif prediction == 1:
+                    label = "⚠️ **Moderate**"
+                    color = "orange"
                 else:
-                    st.write(f"Found **{len(related_quakes)}** earthquakes on the same fault:")
-                    
-                    # Display summary statistics
-                    avg_mag = related_quakes['MAGMB'].mean()
-                    max_mag = related_quakes['MAGMB'].max()
-                    min_mag = related_quakes['MAGMB'].min()
-                    
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        st.metric("Average Magnitude", f"{avg_mag:.2f}")
-                    with col2:
-                        st.metric("Maximum Magnitude", f"{max_mag:.2f}")
-                    with col3:
-                        st.metric("Minimum Magnitude", f"{min_mag:.2f}")
-                    
-                    # Show recent earthquakes
-                    st.subheader("Recent Earthquakes on Same Fault")
-                    display_cols = ['YR', 'MO', 'DT', 'LAT', 'LONG_', 'MAGMB', 'DEPTH_KM']
-                    available_cols = [col for col in display_cols if col in related_quakes.columns]
-                    
-                    if available_cols:
-                        st.dataframe(related_quakes[available_cols].head(10))
+                    label = "✅ **Safe**"
+                    color = "green"
+
+                # -----------------------------
+                # Compute risk-based safety rating
+                # -----------------------------
+                risk = (
+                    0.4 * (mag / 10.0) +
+                    0.3 * (1 - min(hub_dist / 100.0, 1)) +
+                    0.2 * min(fault_density * 10, 1) +
+                    0.1 * terrain_penalty
+                )
+                rating = min(risk * 5, 5.0)
+
+                # -----------------------------
+                # Display results
+                # -----------------------------
+                st.markdown("---")
+                st.subheader("📊 **Earthquake Susceptibility Analysis**")
+                
+                # Create map
+                fig = px.scatter_mapbox(
+                    lat=[lat], lon=[lon], 
+                    color_discrete_sequence=[color], 
+                    size=[20], 
+                    hover_name=[place],
+                    hover_data={"lat": [lat], "lon": [lon]},
+                    zoom=8, height=400,
+                    title=f"Location: {place}"
+                )
+                fig.update_layout(
+                    mapbox_style="open-street-map",
+                    margin={"r":0,"t":30,"l":0,"b":0}
+                )
+                st.plotly_chart(fig, use_container_width=True)
+
+                st.markdown("---")
+                
+                # Display metrics in columns
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.metric("📏 Distance from Fault Hub", f"{hub_dist:.2f} km")
+                    st.metric("📊 Estimated Magnitude", f"{mag:.2f}")
+                with col2:
+                    st.metric("🔥 Fault Density", f"{fault_density:.4f}")
+                    st.metric("💡 Safety Rating", f"{rating:.1f}/5.0")
+                
+                # Prediction result
+                st.markdown("### 🧠 **Model Prediction:**")
+                st.markdown(f"## {label}")
+                
+                # Additional risk factors
+                if terrain_risky:
+                    st.warning("⚠️ **Terrain Risk**: This location is in a landslide-prone area.")
+                
+                # -----------------------------
+                # Earthquakes from same fault
+                # -----------------------------
+                fault_name_col = 'HubName'
+                if fault_name and fault_name != 'Unknown' and fault_name_col in df.columns:
+                    st.markdown("---")
+                    st.markdown("### 🗒️ **Earthquakes from Same Fault Hub**")
+                    st.markdown(f"**Nearest Fault Hub:** `{fault_name}`")
+
+                    related_quakes = df[df[fault_name_col] == fault_name]
+
+                    if related_quakes.empty:
+                        st.info("No related earthquakes found on this fault hub.")
+                    else:
+                        st.write(f"Found **{len(related_quakes)}** earthquakes from the same fault hub:")
+                        
+                        # Display summary statistics
+                        if 'MAGMB' in related_quakes.columns:
+                            avg_mag = related_quakes['MAGMB'].mean()
+                            max_mag = related_quakes['MAGMB'].max()
+                            min_mag = related_quakes['MAGMB'].min()
+                            
+                            col1, col2, col3 = st.columns(3)
+                            with col1:
+                                st.metric("Average Magnitude", f"{avg_mag:.2f}")
+                            with col2:
+                                st.metric("Maximum Magnitude", f"{max_mag:.2f}")
+                            with col3:
+                                st.metric("Minimum Magnitude", f"{min_mag:.2f}")
+                        
+                        # Show recent earthquakes
+                        st.subheader("📋 Recent Earthquakes from Same Fault Hub")
+                        display_cols = ['YR', 'MO', 'DT', 'LAT', 'LONG_', 'MAGMB', 'DEPTH_KM']
+                        available_cols = [col for col in display_cols if col in related_quakes.columns]
+                        
+                        if available_cols:
+                            st.dataframe(
+                                related_quakes[available_cols].head(10),
+                                use_container_width=True
+                            )
+                        else:
+                            st.info("Detailed earthquake data not available for display.")
+
+            except Exception as e:
+                st.error(f"❌ Error during prediction: {str(e)}")
+                st.error("Please check if the model and scalers are compatible with the input data.")
 
         else:
             st.error("❌ No earthquake data available for analysis.")
@@ -326,6 +385,7 @@ if place:
 # -----------------------------
 # Footer
 # -----------------------------
+st.markdown("---")
 st.markdown("""
 <div class="footer">
     <p>🌍 Bhukamp - Earthquake Susceptibility Predictor | Built with ❤️ for safer communities</p>
