@@ -114,7 +114,7 @@ if place:
         }], columns=["mag", "HubDist", "fault_density_norm", "has_fault_density", "terrain_penalty"])
 
         pred = model.predict(X)[0]
-        label = "✅ Safe" if pred == 0 else ("⚠ Moderate" if pred == 1 else "❌ Unsafe")
+        label = "✅ Safe" if pred == 0 else ("⚠️ Moderate" if pred == 1 else "❌ Unsafe")
         if hasattr(model, "predict_proba"):
             probs = model.predict_proba(X)[0]
             st.write(f"Confidence – Safe: {probs[0]:.1%}, Moderate: {probs[1]:.1%}, Unsafe: {probs[2]:.1%}")
