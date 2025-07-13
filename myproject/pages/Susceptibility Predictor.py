@@ -115,10 +115,7 @@ if place:
 
         pred = model.predict(X)[0]
         label = "✅ Safe" if pred == 0 else ("⚠️ Moderate" if pred == 1 else "❌ Unsafe")
-        if hasattr(model, "predict_proba"):
-            probs = model.predict_proba(X)[0]
-            st.write(f"Confidence – Safe: {probs[0]:.1%}, Moderate: {probs[1]:.1%}, Unsafe: {probs[2]:.1%}")
-
+        
         # -- Risk score & user-facing rating (0–5) --
         risk_score = 0.35 * mag_norm + 0.35 * fd_norm + 0.2 * (1 - hd_norm) + 0.1 * terrain_penalty
         risk_score = min(1.0, risk_score)
