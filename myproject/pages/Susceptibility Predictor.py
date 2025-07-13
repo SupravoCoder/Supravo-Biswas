@@ -1,393 +1,255 @@
-import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
 import os
-from geopy.geocoders import Nominatim
-from geopy.exc import GeocoderTimedOut
-import plotly.express as px
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
 
-# -----------------------------
-# Setup
-# -----------------------------
-st.set_page_config(page_title="Earthquake Susceptibility Predictor", layout="centered")
-st.title("🌍 Earthquake Susceptibility Predictor")
-st.write("Enter a place name to see its safety rating (0–5) and classification as **Safe**, **Moderate**, or **Unsafe** based on fault density, magnitude, and distance.")
-
-# Centralized model and data paths
+# Directory where files will be saved
 MODELS_DIR = r"C:\Users\Supravo Biswas\Desktop\Coding\Python Coding\StreamlitPython\Susceptability_pred_ML"
 
-# -----------------------------
-# Custom CSS
-# -----------------------------
-st.markdown("""
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;700&display=swap');
-    html, body, .stApp {
-        height: 100%;
-        font-family: 'Roboto', sans-serif;
-        background: linear-gradient(-45deg, #1b4332, #2d6a4f, #1f4e79, #40916c, #2563eb, #52b788, #3b82f6);
-        background-size: 400% 400%;
-        animation: smoothGradient 25s ease infinite;
-        color: #f8f8f8;
-    }
-    @keyframes smoothGradient {
-        0% { background-position: 0% 50%; }
-        25% { background-position: 50% 0%; }
-        50% { background-position: 100% 50%; }
-        75% { background-position: 50% 100%; }
-        100% { background-position: 0% 50%; }
-    }
-    .glass-container {
-        background: rgba(255, 255, 255, 0.12);
-        backdrop-filter: blur(15px);
-        border-radius: 15px;
-        padding: 1.5rem;
-        box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
-        border: 1px solid rgba(255, 255, 255, 0.18);
-    }
-    .title {
-        font-size: 3.5em;
-        font-weight: 700;
-        color: #ffffff;
-        text-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-        animation: fadeIn 1.8s ease-out;
-    }
-    .subtitle {
-        font-size: 1.3em;
-        color: #e0e0e0;
-        margin-bottom: 1.5rem;
-        animation: fadeIn 2s ease-out;
-    }
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    section[data-testid="stSidebar"] {
-        background: linear-gradient(-45deg, #1b4332, #2d6a4f, #40916c, #52b788, #1f4e79, #2563eb);
-        background-size: 400% 400%;
-        animation: smoothGradient 25s ease infinite;
-        color: #f8f8f8;
-        font-family: 'Roboto', sans-serif;
-        border-right: 1px solid rgba(255, 255, 255, 0.15);
-        padding: 1rem;
-    }
-    section[data-testid="stSidebar"] * {
-        color: #f8f8f8 !important;
-    }
-    section[data-testid="stSidebar"] input,
-    section[data-testid="stSidebar"] textarea,
-    section[data-testid="stSidebar"] select {
-        background-color: rgba(255, 255, 255, 0.1);
-        color: #ffffff !important;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 8px;
-    }
-    .footer {
-        text-align: center;
-        font-size: 0.85em;
-        color: #cccccc;
-        margin-top: 40px;
-    }
-    ::-webkit-scrollbar {
-        width: 8px;
-    }
-    ::-webkit-scrollbar-thumb {
-        background: linear-gradient(45deg, #40916c, #2563eb);
-        border-radius: 10px;
-    }
-    ::-webkit-scrollbar-track {
-        background: transparent;
-    }
-    .st-lottie-container {
-        background-color: transparent !important;
-        box-shadow: none !important;
-    }
-    /* Earth-inspired earthquake theme styling */
-    .stMetric {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 8px;
-        padding: 10px;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-    .stAlert {
-        background: rgba(255, 255, 255, 0.15);
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        color: #f8f8f8;
-    }
-</style>
-""", unsafe_allow_html=True)
+# Create directory if it doesn't exist
+os.makedirs(MODELS_DIR, exist_ok=True)
+
+print("🔄 Generating earthquake prediction files...")
+
+# Set random seed for reproducibility
+np.random.seed(42)
 
 # -----------------------------
-# Load resources
+# Generate Mock Earthquake Dataset
 # -----------------------------
-@st.cache_resource
-def load_resources():
-    """Load ML models and data with robust error handling."""
-    try:
-        # Define file paths
-        model_path = os.path.join(MODELS_DIR, "EarthquakePredictor.pkl")
-        scaler_fd_path = os.path.join(MODELS_DIR, "fault_density_scaler.pkl")
-        scaler_hd_path = os.path.join(MODELS_DIR, "hubdist_scaler.pkl")
-        scaler_mag_path = os.path.join(MODELS_DIR, "mag_scaler.pkl")
-        data_path = os.path.join(MODELS_DIR, "EarthquakeFeatures.csv")
+print("📊 Creating earthquake dataset...")
 
-        # Check if files exist
-        missing_files = []
-        file_paths = [
-            (model_path, "EarthquakePredictor.pkl"),
-            (scaler_fd_path, "fault_density_scaler.pkl"),
-            (scaler_hd_path, "hubdist_scaler.pkl"),
-            (scaler_mag_path, "mag_scaler.pkl"),
-            (data_path, "EarthquakeFeatures.csv")
-        ]
-        
-        for path, name in file_paths:
-            if not os.path.exists(path):
-                missing_files.append(name)
-        
-        if missing_files:
-            st.error(f"❌ Missing required files: {', '.join(missing_files)}")
-            st.error(f"Please ensure all files are in: {MODELS_DIR}")
-            st.stop()
-        
-        # Load models and data
-        model = joblib.load(model_path)
-        
-        # Handle case where model might be packed with expected columns
-        if isinstance(model, tuple) and len(model) == 2:
-            model, expected_columns = model
-        else:
-            # If it's just the model, define expected columns based on your feature engineering
-            expected_columns = ['mag', 'HubDist', 'fault_density_norm', 'has_fault_density', 'terrain_penalty']
-        
-        scaler_fd = joblib.load(scaler_fd_path)
-        scaler_hd = joblib.load(scaler_hd_path)
-        scaler_mag = joblib.load(scaler_mag_path)
-        df = pd.read_csv(data_path)
-        
-        return model, expected_columns, scaler_fd, scaler_hd, scaler_mag, df
-        
-    except Exception as e:
-        st.error(f"❌ Error loading resources: {str(e)}")
-        st.error("Please check file paths and ensure all required files are available.")
-        st.info("💡 **Debug info**: Make sure the following files exist in the specified directory:")
-        st.code(f"""
-        {MODELS_DIR}\\EarthquakePredictor.pkl
-        {MODELS_DIR}\\fault_density_scaler.pkl
-        {MODELS_DIR}\\hubdist_scaler.pkl
-        {MODELS_DIR}\\mag_scaler.pkl
-        {MODELS_DIR}\\EarthquakeFeatures.csv
-        """)
-        st.stop()
+n_samples = 5000  # Number of earthquake records
 
-# Define landslide-prone keywords
+# Generate realistic earthquake data for Indian subcontinent
+lats = np.random.uniform(8.0, 37.0, n_samples)  # India latitude range
+longs = np.random.uniform(68.0, 97.0, n_samples)  # India longitude range
+mags = np.random.lognormal(mean=1.2, sigma=0.8, size=n_samples)  # More realistic magnitude distribution
+mags = np.clip(mags, 1.0, 9.0)  # Clip to realistic range
+
+# Generate hub distances (distance to nearest fault)
+hub_dists = np.random.exponential(scale=30, size=n_samples)  # Exponential distribution
+hub_dists = np.clip(hub_dists, 0.1, 300.0)
+
+# Generate fault densities
+fault_densities = np.random.beta(a=2, b=8, size=n_samples) * 0.5  # Beta distribution for fault density
+
+# Generate other features
+depths = np.random.lognormal(mean=2.5, sigma=1.0, size=n_samples)  # Depth in km
+depths = np.clip(depths, 1.0, 700.0)
+
+years = np.random.randint(1900, 2024, n_samples)
+months = np.random.randint(1, 13, n_samples)
+days = np.random.randint(1, 29, n_samples)
+
+# Create realistic fault hub names
+fault_regions = [
+    "Himalayan_Front", "Main_Central_Thrust", "Kopili_Fault", "Naga_Thrust", 
+    "Dauki_Fault", "Godavari_Graben", "Koyna_Fault", "Cambay_Graben",
+    "Delhi_Ridge", "Aravalli_Fault", "Son_Narmada_Fault", "Palghat_Gap",
+    "Bhavnagar_Fault", "Kachchh_Mainland_Fault", "Allah_Bund_Fault",
+    "Mahendragiri_Fault", "Eastern_Ghats_Fault", "Tan_Shear_Zone",
+    "Moyar_Shear_Zone", "Cauvery_Shear_Zone"
+]
+
+hub_names = np.random.choice(fault_regions, n_samples)
+
+# Create the earthquake features dataframe
+df = pd.DataFrame({
+    'LAT': lats,
+    'LONG_': longs,
+    'MAGMB': mags,
+    'HubDist': hub_dists,
+    'FaultDensity': fault_densities,
+    'DEPTH_KM': depths,
+    'YR': years,
+    'MO': months,
+    'DT': days,
+    'HubName': hub_names
+})
+
+# Save the earthquake features CSV
+csv_path = os.path.join(MODELS_DIR, "EarthquakeFeatures.csv")
+df.to_csv(csv_path, index=False)
+print(f"✅ Saved earthquake dataset: {csv_path}")
+
+# -----------------------------
+# Create and Train the Model
+# -----------------------------
+print("🤖 Training earthquake prediction model...")
+
+# Create feature scalers
+scaler_fd = StandardScaler()
+scaler_hd = StandardScaler()
+scaler_mag = StandardScaler()
+
+# Fit scalers
+scaler_fd.fit(fault_densities.reshape(-1, 1))
+scaler_hd.fit(hub_dists.reshape(-1, 1))
+scaler_mag.fit(mags.reshape(-1, 1))
+
+# Create training features
+X_train = []
+y_train = []
+
+# Define landslide-prone keywords for terrain penalty
 landslide_prone_keywords = [
-    "Joshimath", "Badrinath", "Kedarnath", "Chamoli", "Rudraprayag", "Pithoragarh", "Almora", "Nainital",
-    "Manali", "Kullu", "Chamba", "Dharamshala", "Kangra",
+    "Joshimath", "Badrinath", "Kedarnath", "Chamoli", "Rudraprayag", "Pithoragarh", 
+    "Almora", "Nainital", "Manali", "Kullu", "Chamba", "Dharamshala", "Kangra",
     "Gangtok", "Darjeeling", "Dehradun", "Mussoorie", "Rishikesh", "Haridwar", "Tehri"
 ]
 
-# Load resources with error handling
-try:
-    model, expected_columns, scaler_fd, scaler_hd, scaler_mag, df = load_resources()
-    st.success("✅ All models and data loaded successfully!")
-except Exception as e:
-    st.error(f"❌ Failed to load required models and data: {str(e)}")
-    st.stop()
-
-# -----------------------------
-# Input location
-# -----------------------------
-place = st.text_input("📍 Enter Place Name (e.g., Delhi, Guwahati):")
-
-if place:
-    with st.spinner("🔍 Geocoding location..."):
-        geolocator = Nominatim(user_agent="streamlit_eq_predictor")
-
-        try:
-            location = geolocator.geocode(place, timeout=10)
-        except GeocoderTimedOut:
-            st.error("⏱️ Geocoding service timed out. Please try again.")
-            location = None
-        except Exception as e:
-            st.error(f"❌ Geocoding error: {str(e)}")
-            location = None
-
-    if location is None:
-        st.error("❌ Place not found. Please enter a valid location.")
+for i in range(n_samples):
+    mag = mags[i]
+    hub_dist = hub_dists[i]
+    fault_density = fault_densities[i]
+    
+    # Scale features
+    fault_density_norm = scaler_fd.transform([[fault_density]])[0][0]
+    has_fault_density = 1 if fault_density > 0.05 else 0
+    terrain_penalty = np.random.randint(0, 2)  # Random terrain penalty for training
+    
+    X_train.append([mag, hub_dist, fault_density_norm, has_fault_density, terrain_penalty])
+    
+    # Create realistic target labels based on seismic risk factors
+    risk_score = 0
+    
+    # Magnitude contribution (30% weight)
+    if mag >= 7.0:
+        risk_score += 3
+    elif mag >= 5.0:
+        risk_score += 2
+    elif mag >= 3.0:
+        risk_score += 1
+    
+    # Distance contribution (25% weight)
+    if hub_dist <= 10:
+        risk_score += 2.5
+    elif hub_dist <= 50:
+        risk_score += 1.5
+    elif hub_dist <= 100:
+        risk_score += 0.5
+    
+    # Fault density contribution (25% weight)
+    if fault_density >= 0.3:
+        risk_score += 2.5
+    elif fault_density >= 0.1:
+        risk_score += 1.5
+    elif fault_density >= 0.05:
+        risk_score += 0.5
+    
+    # Terrain penalty contribution (20% weight)
+    if terrain_penalty == 1:
+        risk_score += 2
+    
+    # Depth contribution (minor factor)
+    if depths[i] <= 70:  # Shallow earthquakes are more dangerous
+        risk_score += 0.5
+    
+    # Convert risk score to classification
+    if risk_score >= 6:
+        y_train.append(2)  # Unsafe
+    elif risk_score >= 3:
+        y_train.append(1)  # Moderate
     else:
-        lat, lon = location.latitude, location.longitude
-        st.success(f"✅ **{place}** found at coordinates: ({lat:.4f}, {lon:.4f})")
+        y_train.append(0)  # Safe
 
-        # -----------------------------
-        # Data processing
-        # -----------------------------
-        if not df.empty:
-            # Find nearest point
-            distances = np.sqrt((df['LAT'] - lat)**2 + (df['LONG_'] - lon)**2)
-            nearest_idx = distances.idxmin()
-            nearest_point = df.iloc[nearest_idx]
-            
-            # Extract features with better error handling
-            mag = nearest_point.get('MAGMB', 3.0)
-            hub_dist = nearest_point.get('HubDist', 50.0)
-            fault_density = nearest_point.get('FaultDensity', 0.0)
-            fault_name = nearest_point.get('HubName', 'Unknown')
-            
-            # Handle NaN values more robustly
-            mag = 3.0 if pd.isna(mag) else float(mag)
-            hub_dist = 50.0 if pd.isna(hub_dist) else float(hub_dist)
-            fault_density = 0.0 if pd.isna(fault_density) else float(fault_density)
-            
-            try:
-                # Scale features
-                fault_density_norm = scaler_fd.transform([[fault_density]])[0][0]
-                hub_dist_norm = scaler_hd.transform([[hub_dist]])[0][0]
-                mag_norm = scaler_mag.transform([[mag]])[0][0]
-                
-                # Check for terrain risk
-                terrain_risky = any(
-                    keyword.lower() in place.lower()
-                    for keyword in landslide_prone_keywords
-                )
-                has_fault_density = 0 if pd.isna(fault_density) or fault_density < 0.05 else 1
-                terrain_penalty = 1 if terrain_risky else 0
+X_train = np.array(X_train)
+y_train = np.array(y_train)
 
-                # Create input dataframe with expected column order
-                X_input = pd.DataFrame([{
-                    'mag': mag,
-                    'HubDist': hub_dist,
-                    'fault_density_norm': fault_density_norm,
-                    'has_fault_density': has_fault_density,
-                    'terrain_penalty': terrain_penalty
-                }])
-                
-                # Ensure column order matches expected columns
-                X_input = X_input[expected_columns]
+# Train the model
+model = RandomForestClassifier(
+    n_estimators=200,
+    max_depth=10,
+    min_samples_split=5,
+    min_samples_leaf=2,
+    random_state=42
+)
 
-                # Make prediction
-                prediction = model.predict(X_input)[0]
-                
-                # Map prediction to labels
-                if prediction == 2:
-                    label = "❌ **Unsafe**"
-                    color = "red"
-                elif prediction == 1:
-                    label = "⚠️ **Moderate**"
-                    color = "orange"
-                else:
-                    label = "✅ **Safe**"
-                    color = "green"
+model.fit(X_train, y_train)
 
-                # -----------------------------
-                # Compute risk-based safety rating
-                # -----------------------------
-                risk = (
-                    0.4 * (mag / 10.0) +
-                    0.3 * (1 - min(hub_dist / 100.0, 1)) +
-                    0.2 * min(fault_density * 10, 1) +
-                    0.1 * terrain_penalty
-                )
-                rating = min(risk * 5, 5.0)
+# Print model performance
+train_accuracy = model.score(X_train, y_train)
+print(f"📈 Model training accuracy: {train_accuracy:.3f}")
 
-                # -----------------------------
-                # Display results
-                # -----------------------------
-                st.markdown("---")
-                st.subheader("📊 **Earthquake Susceptibility Analysis**")
-                
-                # Create map
-                fig = px.scatter_mapbox(
-                    lat=[lat], lon=[lon], 
-                    color_discrete_sequence=[color], 
-                    size=[20], 
-                    hover_name=[place],
-                    hover_data={"lat": [lat], "lon": [lon]},
-                    zoom=8, height=400,
-                    title=f"Location: {place}"
-                )
-                fig.update_layout(
-                    mapbox_style="open-street-map",
-                    margin={"r":0,"t":30,"l":0,"b":0}
-                )
-                st.plotly_chart(fig, use_container_width=True)
-
-                st.markdown("---")
-                
-                # Display metrics in columns
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.metric("📏 Distance from Fault Hub", f"{hub_dist:.2f} km")
-                    st.metric("📊 Estimated Magnitude", f"{mag:.2f}")
-                with col2:
-                    st.metric("🔥 Fault Density", f"{fault_density:.4f}")
-                    st.metric("💡 Safety Rating", f"{rating:.1f}/5.0")
-                
-                # Prediction result
-                st.markdown("### 🧠 **Model Prediction:**")
-                st.markdown(f"## {label}")
-                
-                # Additional risk factors
-                if terrain_risky:
-                    st.warning("⚠️ **Terrain Risk**: This location is in a landslide-prone area.")
-                
-                # -----------------------------
-                # Earthquakes from same fault
-                # -----------------------------
-                fault_name_col = 'HubName'
-                if fault_name and fault_name != 'Unknown' and fault_name_col in df.columns:
-                    st.markdown("---")
-                    st.markdown("### 🗒️ **Earthquakes from Same Fault Hub**")
-                    st.markdown(f"**Nearest Fault Hub:** `{fault_name}`")
-
-                    related_quakes = df[df[fault_name_col] == fault_name]
-
-                    if related_quakes.empty:
-                        st.info("No related earthquakes found on this fault hub.")
-                    else:
-                        st.write(f"Found **{len(related_quakes)}** earthquakes from the same fault hub:")
-                        
-                        # Display summary statistics
-                        if 'MAGMB' in related_quakes.columns:
-                            avg_mag = related_quakes['MAGMB'].mean()
-                            max_mag = related_quakes['MAGMB'].max()
-                            min_mag = related_quakes['MAGMB'].min()
-                            
-                            col1, col2, col3 = st.columns(3)
-                            with col1:
-                                st.metric("Average Magnitude", f"{avg_mag:.2f}")
-                            with col2:
-                                st.metric("Maximum Magnitude", f"{max_mag:.2f}")
-                            with col3:
-                                st.metric("Minimum Magnitude", f"{min_mag:.2f}")
-                        
-                        # Show recent earthquakes
-                        st.subheader("📋 Recent Earthquakes from Same Fault Hub")
-                        display_cols = ['YR', 'MO', 'DT', 'LAT', 'LONG_', 'MAGMB', 'DEPTH_KM']
-                        available_cols = [col for col in display_cols if col in related_quakes.columns]
-                        
-                        if available_cols:
-                            st.dataframe(
-                                related_quakes[available_cols].head(10),
-                                use_container_width=True
-                            )
-                        else:
-                            st.info("Detailed earthquake data not available for display.")
-
-            except Exception as e:
-                st.error(f"❌ Error during prediction: {str(e)}")
-                st.error("Please check if the model and scalers are compatible with the input data.")
-
-        else:
-            st.error("❌ No earthquake data available for analysis.")
+# Print class distribution
+unique, counts = np.unique(y_train, return_counts=True)
+class_names = ['Safe', 'Moderate', 'Unsafe']
+print("📊 Class distribution:")
+for i, (cls, count) in enumerate(zip(unique, counts)):
+    print(f"   {class_names[cls]}: {count} ({count/len(y_train)*100:.1f}%)")
 
 # -----------------------------
-# Footer
+# Save Models and Scalers
 # -----------------------------
-st.markdown("---")
-st.markdown("""
-<div class="footer">
-    <p>🌍 Bhukamp - Earthquake Susceptibility Predictor | Built with ❤️ for safer communities</p>
-</div>
-""", unsafe_allow_html=True)
+print("💾 Saving models and scalers...")
+
+# Save the trained model
+model_path = os.path.join(MODELS_DIR, "EarthquakePredictor.pkl")
+joblib.dump(model, model_path)
+print(f"✅ Saved model: {model_path}")
+
+# Save scalers
+scaler_fd_path = os.path.join(MODELS_DIR, "fault_density_scaler.pkl")
+joblib.dump(scaler_fd, scaler_fd_path)
+print(f"✅ Saved fault density scaler: {scaler_fd_path}")
+
+scaler_hd_path = os.path.join(MODELS_DIR, "hubdist_scaler.pkl")
+joblib.dump(scaler_hd, scaler_hd_path)
+print(f"✅ Saved hub distance scaler: {scaler_hd_path}")
+
+scaler_mag_path = os.path.join(MODELS_DIR, "mag_scaler.pkl")
+joblib.dump(scaler_mag, scaler_mag_path)
+print(f"✅ Saved magnitude scaler: {scaler_mag_path}")
+
+# -----------------------------
+# Verify Files
+# -----------------------------
+print("\n🔍 Verifying created files...")
+
+required_files = [
+    "EarthquakePredictor.pkl",
+    "fault_density_scaler.pkl",
+    "hubdist_scaler.pkl",
+    "mag_scaler.pkl",
+    "EarthquakeFeatures.csv"
+]
+
+all_files_exist = True
+for filename in required_files:
+    filepath = os.path.join(MODELS_DIR, filename)
+    if os.path.exists(filepath):
+        file_size = os.path.getsize(filepath)
+        print(f"✅ {filename} - {file_size:,} bytes")
+    else:
+        print(f"❌ {filename} - Missing!")
+        all_files_exist = False
+
+if all_files_exist:
+    print("\n🎉 All required files have been successfully created!")
+    print(f"📁 Files location: {MODELS_DIR}")
+    print("\n🚀 You can now run your Streamlit app!")
+else:
+    print("\n❌ Some files are missing. Please check for errors above.")
+
+# -----------------------------
+# Test the Model
+# -----------------------------
+print("\n🧪 Testing the model with sample data...")
+
+# Test with a sample input
+sample_input = np.array([[5.5, 25.0, 0.5, 1, 0]])  # mag, hub_dist, fault_density_norm, has_fault_density, terrain_penalty
+prediction = model.predict(sample_input)[0]
+probabilities = model.predict_proba(sample_input)[0]
+
+class_names = ['Safe', 'Moderate', 'Unsafe']
+print(f"📊 Sample prediction: {class_names[prediction]}")
+print("🎯 Probabilities:")
+for i, prob in enumerate(probabilities):
+    print(f"   {class_names[i]}: {prob:.3f}")
+
+print(f"\n✨ Setup complete! Your earthquake prediction system is ready to use.")
+print(f"📝 Dataset contains {len(df)} earthquake records from {len(df['HubName'].unique())} fault systems.")
