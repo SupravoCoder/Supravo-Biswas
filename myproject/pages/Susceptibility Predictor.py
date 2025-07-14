@@ -122,7 +122,7 @@ def load_resources():
     scaler_fd_path = os.path.join(MODELS_DIR, "Susceptability_pred_ML/fault_density_scaler.pkl")
     scaler_hd_path = os.path.join(MODELS_DIR, "Susceptability_pred_ML/hubdist_scaler.pkl")
     scaler_mag_path = os.path.join(MODELS_DIR, "Susceptability_pred_ML/mag_scaler.pkl")
-    data_path = os.path.join(MODELS_DIR, "EarthquakeFeatures.csv")
+    data_path = os.path.join(MODELS_DIR, "Susceptability_pred_ML/EarthquakeFeatures.csv")
 
     for path, name in [
         (model_path, "EarthquakePredictor.pkl"),
