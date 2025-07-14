@@ -386,10 +386,19 @@ if not df.empty:
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.metric("Recent Earthquakes", f"{len(df)}")
+        
     with col2:
-        st.metric("Average Magnitude", f"{df['mag'].mean():.2f}")
+        if 'mag' in df.columns and not df['mag'].isnull().all():
+            st.metric("Average Magnitude", f"{df['mag'].mean():.2f}")
+        else:
+            st.metric("Average Magnitude", "N/A")
+
     with col3:
-        st.metric("Max Magnitude", f"{df['mag'].max():.2f}")
+        if 'mag' in df.columns and not df['mag'].isnull().all():
+            st.metric("Max Magnitude", f"{df['mag'].max():.2f}")
+        else:
+            st.metric("Max Magnitude", "N/A")
+
     with col4:
         recent_time = df['time'].max() if not df.empty else "N/A"
         st.metric("Latest Update", recent_time)
