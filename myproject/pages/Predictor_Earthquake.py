@@ -550,7 +550,7 @@ def main():
             
             # File paths for prediction data
             main_path = r"myproject/data/future_earthquake_predictions_100years.csv"
-            pinn_path = r"myproject/data/future_earthquake_predictions_100years.csv"
+            pinn_path = r"myproject/data/future_earthquake_predictions_india_25years_2025_2050.csv"
             
             # Model-specific column mappings
             model_options = {
