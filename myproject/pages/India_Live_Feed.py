@@ -400,8 +400,15 @@ if not df.empty:
             st.metric("Max Magnitude", "N/A")
 
     with col4:
-        recent_time = df['time'].max() if not df.empty else "N/A"
-        st.metric("Latest Update", recent_time)
+        time_col = next((col for col in ['time', 'datetime', 'event_time', 'timestamp'] 
+                 if col in df.columns), None)
+
+        if time_col:
+            recent_time = df[time_col].max()
+        else:
+            recent_time = "N/A"
+            
+    st.metric("Latest Update", recent_time)
 
     # Check for significant recent earthquakes (within last 24 hours)
     if 'time' in df.columns:
