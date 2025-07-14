@@ -118,7 +118,7 @@ MODELS_DIR = "."
 
 @st.cache_resource
 def load_resources():
-    model_path = os.path.join(MODELS_DIR, "EarthquakePredictor.pkl")
+    model_path = os.path.join(MODELS_DIR, "Susceptability_pred_ML/EarthquakePredictor.pkl")
     scaler_fd_path = os.path.join(MODELS_DIR, "fault_density_scaler.pkl")
     scaler_hd_path = os.path.join(MODELS_DIR, "hubdist_scaler.pkl")
     scaler_mag_path = os.path.join(MODELS_DIR, "mag_scaler.pkl")
