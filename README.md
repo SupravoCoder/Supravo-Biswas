@@ -167,7 +167,7 @@ We welcome contributions! Please feel free to submit a Pull Request. For major c
 
 ## 📞 Contact
 
-- **Email**: supravo.biswas@example.com
+- **Email**: supravo.biswas@gmail.com
 - **GitHub**: [@SupravoCoder](https://github.com/SupravoCoder)
 - **Project Link**: [https://github.com/SupravoCoder/Bhukamp](https://github.com/SupravoCoder/Bhukamp)
 
