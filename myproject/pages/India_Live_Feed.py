@@ -338,6 +338,42 @@ if data_source == "Upload CSV":
 # Load data based on selected source
 with st.spinner("Fetching earthquake data..."):
     df = load_earthquake_data(data_source, uploaded_file)
+    def standardize_columns(df):
+        rename_map = {}
+    
+        # Latitude
+        for lat_col in ['latitude', 'lat', 'LAT']:
+            if lat_col in df.columns:
+                rename_map[lat_col] = 'latitude'
+                break
+
+        # Longitude
+        for lon_col in ['longitude', 'lon', 'LONG_', 'long', 'LON']:
+            if lon_col in df.columns:
+                rename_map[lon_col] = 'longitude'
+                break
+
+        # Magnitude
+        for mag_col in ['mag', 'MAGMB', 'magnitude', 'MW', 'mb']:
+            if mag_col in df.columns:
+                rename_map[mag_col] = 'mag'
+                break
+
+        # Depth
+        for depth_col in ['depth', 'DEPTH_KM', 'depth_km']:
+            if depth_col in df.columns:
+                rename_map[depth_col] = 'depth'
+                break
+
+        # Time
+        for time_col in ['time', 'TIME', 'event_time', 'datetime', 'DATE']:
+            if time_col in df.columns:
+                rename_map[time_col] = 'time'
+                break
+
+        return df.rename(columns=rename_map)
+
+    df = standardize_columns(df)
 
 # Display error if no data
 if df.empty:
