@@ -441,7 +441,20 @@ if not df.empty:
     with tab1:
         # Map of recent earthquakes
         st.markdown("### Recent Earthquake Locations")
-        
+        required_cols = ['latitude', 'longitude', 'mag']
+        missing_cols = [col for col in required_cols if col not in df.columns]
+
+        if missing_cols:
+            st.error(f"❌ Required columns missing for map: {missing_cols}")
+            st.stop()
+
+        # Ensure columns are numeric
+        df = df.dropna(subset=['latitude', 'longitude', 'mag'])  # Drop rows with nulls
+        df['latitude'] = pd.to_numeric(df['latitude'], errors='coerce')
+        df['longitude'] = pd.to_numeric(df['longitude'], errors='coerce')
+        df['mag'] = pd.to_numeric(df['mag'], errors='coerce')
+        df = df.dropna(subset=['latitude', 'longitude', 'mag'])  # Drop non-convertible values
+
         # Create map
         fig = px.scatter_mapbox(
             df,
