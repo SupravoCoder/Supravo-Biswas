@@ -376,7 +376,7 @@ def standardize_columns(df):
 # Load data based on selected source
 with st.spinner("Fetching earthquake data..."):
     df = load_earthquake_data(data_source, uploaded_file)
-    df.columns = df.columns.str.strip()  # Clean column headers
+    df.columns = [str(col).strip() for col in df.columns]
     df = standardize_columns(df)
 
 # Display error if no data
@@ -486,45 +486,61 @@ if not df.empty:
         df['mag'] = pd.to_numeric(df['mag'], errors='coerce')
         df = df.dropna(subset=required_cols)
 
+        # Fallback for hover_name if 'place' is missing
+        if 'place' in df.columns:
+            hover_name = 'place'
+        else:
+            df['hover_name'] = df.apply(lambda row: f"Lat: {row['latitude']:.2f}, Lon: {row['longitude']:.2f}", axis=1)
+            hover_name = 'hover_name'
+
+        hover_data = []
+        for col in ['time', 'mag', 'depth']:
+            if col in df.columns:
+                hover_data.append(col)
+
         try:
             fig = px.scatter_mapbox(
-                df,
-                lat='latitude',
-                lon='longitude',
-                color='mag',
-                size='mag',
-                size_max=15,
-                zoom=4,
-                center={"lat": 20.5937, "lon": 78.9629},
-                hover_name='place',
-                hover_data=['time', 'mag', 'depth'],
-                color_continuous_scale='Inferno',
-                title="Recent Earthquakes in India"
+            df,
+            lat='latitude',
+            lon='longitude',
+            color='mag',
+            size='mag',
+            size_max=15,
+            zoom=4,
+            center={"lat": 20.5937, "lon": 78.9629},
+            hover_name=hover_name,
+            hover_data=hover_data,
+            color_continuous_scale='Inferno',
+            title="Recent Earthquakes in India"
             )
-            fig.update_layout(mapbox_style="carto-darkmatter", margin={"r":0,"t":30,"l":0,"b":0}, height=600)
+            fig.update_layout(mapbox_style="carto-darkmatter", margin={"r": 0, "t": 30, "l": 0, "b": 0}, height=600)
             st.plotly_chart(fig, use_container_width=True)
         except Exception as e:
             st.error(f"⚠️ Map could not be displayed: {e}")
 
         st.markdown("""
-        ### Earthquake Magnitude Scale
-        - **< 3.0**: Very Minor - Generally not felt
-        - **3.0–3.9**: Minor - Felt by many people
-        - **4.0–4.9**: Light - Felt by everyone, minor damage
-        - **5.0–5.9**: Moderate - Slight damage to buildings
-        - **6.0–6.9**: Strong - Moderate damage in populated areas
-        - **≥ 7.0**: Major - Serious damage over large areas
-        """)
+    ### Earthquake Magnitude Scale
+    - **< 3.0**: Very Minor - Generally not felt  
+    - **3.0–3.9**: Minor - Felt by many people  
+    - **4.0–4.9**: Light - Felt by everyone, minor damage  
+    - **5.0–5.9**: Moderate - Slight damage to buildings  
+    - **6.0–6.9**: Strong - Moderate damage in populated areas  
+    - **≥ 7.0**: Major - Serious damage over large areas  
+    """)
 
     with tab2:
         st.markdown("### Earthquake Activity - Last 30 Days")
+
         if 'datetime' not in df.columns and 'time' in df.columns:
             df['datetime'] = pd.to_datetime(df['time'], errors='coerce')
 
-        df_sorted = df.sort_values(by='datetime')
+        if 'datetime' in df.columns:
+            df_sorted = df.sort_values(by='datetime')
+        else:
+            df_sorted = df
 
         fig2 = px.scatter(
-            df_sorted, x='datetime', y='mag',
+            df_sorted, x='datetime' if 'datetime' in df.columns else None, y='mag',
             color='mag', size='mag',
             color_continuous_scale='Inferno',
             title="Earthquake Magnitudes Over Time"
@@ -543,21 +559,16 @@ if not df.empty:
     with tab3:
         st.markdown("### Earthquake Data Records")
         search_term = st.text_input("🔍 Search by location:", "")
-        filtered_data = df[df['place'].str.contains(search_term, case=False, na=False)] if search_term else df
-        st.dataframe(filtered_data.sort_values(by='time', ascending=False), use_container_width=True, height=500)
+        if 'place' in df.columns:
+            filtered_data = df[df['place'].str.contains(search_term, case=False, na=False)] if search_term else df
+        else:
+            filtered_data = df  # fallback if no 'place' column
+
+        st.dataframe(filtered_data.sort_values(by='time', ascending=False) if 'time' in df.columns else filtered_data,
+                     use_container_width=True, height=500)
 
         csv_data = filtered_data.to_csv(index=False).encode('utf-8')
-        st.download_button("📥 Download Current Data", csv_data, f"india_earthquakes_{datetime.datetime.now():%Y%m%d}.csv", "text/csv")
-
-# Footer
-st.markdown(f"""
-<div class="footer">
-    <p>Data sources: USGS, EMSC, CSV | Last updated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
-    <p>This app is for educational use only. For official data, refer to government agencies.</p>
-</div>
-""", unsafe_allow_html=True)
-
-st.sidebar.info("ℹ️ Live feed data is cached for 5 minutes. Use 'Refresh Data' to manually update.")
+        st.download_button("📥 Download Current Data", csv_data,f"india_earthquakes_{datetime.datetime.now():%Y%m%d}.csv", "text/csv")
 
 # Add data directory creation helper
 if data_source == "Local CSV File" and df.empty:
