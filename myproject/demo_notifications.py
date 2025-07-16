@@ -44,7 +44,7 @@ def demo_notification_system():
     print("\n👥 Current subscribers:")
     subscribers = notification_system.get_subscribers()
     for _, sub in subscribers.iterrows():
-        print(f"- ID {sub['id']}: {sub['name']} ({sub['phone_number']}) - {sub['preferred_method']}")
+        print(f"- ID {sub['id']}: {sub['name']} - {sub['preferred_method']}")
     
     # Create sample earthquake prediction
     print("\n🔮 Creating sample earthquake prediction...")
