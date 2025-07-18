@@ -868,7 +868,7 @@ with st.container():
                    #         img_data = base64.b64encode(img_file.read()).decode()
                   #          img_src = f"data:image/png;base64,{img_data}"
                   #  except:
-                        img_src = f"https://ui-avatars.com/api/?name={'+'.join(member['name'].split())}&size=120&background=52b788&color=ffffff&bold=true"
+                        #img_src = f"https://ui-avatars.com/api/?name={'+'.join(member['name'].split())}&size=120&background=52b788&color=ffffff&bold=true"
              #   else:
                  #   img_src = f"https://ui-avatars.com/api/?name={'+'.join(member['name'].split())}&size=120&background=52b788&color=ffffff&bold=true"
                 
