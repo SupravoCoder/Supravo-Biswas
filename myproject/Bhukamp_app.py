@@ -872,34 +872,33 @@ with st.container():
              #   else:
                  #   img_src = f"https://ui-avatars.com/api/?name={'+'.join(member['name'].split())}&size=120&background=52b788&color=ffffff&bold=true"
                 
-                st.markdown(f"""
-                <div class='team-card'>
-                    <div class='image-container'>
-                        <img src="{img_src}" alt="{member['name']}" />
-                    </div>
-                    <div class='team-name'>{member["name"]}</div>
-                    <div class='team-role'>{member["role"]}</div>
-                    <div class='team-description'>{member["description"]}</div>
-                    <div class='skill-tags'>
-                        {''.join([f"<span class='skill-tag'>{skill}</span>" for skill in member["skills"]])}
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
+                #st.markdown(f"""
+                #<div class='team-card'>
+                    #<div class='image-container'>
+                        #<img src="{img_src}" alt="{member['name']}" />
+                   # </div>
+                    #<div class='team-name'>{member["name"]}</div>
+                    #<div class='team-role'>{member["role"]}</div>
+                    #<div class='team-description'>{member["description"]}</div>
+                    #<div class='skill-tags'>
+                        #{''.join([f"<span class='skill-tag'>{skill}</span>" for skill in member["skills"]])}
+                    #</div>
+                #</div>
+                #""", unsafe_allow_html=True)
     
     # Team stats and achievements
-    st.markdown("---")
-    col1, col2, col3, col4 = st.columns(4)
+   # col1, col2, col3, col4 = st.columns(4)
     
-    with col1:
-        st.metric("👥 Team Members", "6", "Experts")
-    with col2:
-        st.metric("� Combined Experience", "2+", "Years")
-    with col3:
-        st.metric("🏆 ML Models Developed", "5", "Advanced")
-    with col4:
-        st.metric("📊 Data Points Analyzed", "1M+", "Seismic Events")
+   # with col1:
+       # st.metric("👥 Team Members", "6", "Experts")
+  #  with col2:
+      #  st.metric("� Combined Experience", "2+", "Years")
+    #with col3:
+       # st.metric("🏆 ML Models Developed", "5", "Advanced")
+   # with col4:
+      #  st.metric("📊 Data Points Analyzed", "1M+", "Seismic Events")
     
-    st.markdown("</div>", unsafe_allow_html=True)
+   # st.markdown("</div>", unsafe_allow_html=True)
 
 # ------------------ Footer ------------------
 st.markdown("---")
