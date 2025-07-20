@@ -115,7 +115,7 @@ StreamlitPython/
 | **Supravo Biswas** | 🔬 Full Pipeline Developer & ML Contributor | Streamlit, Full Stack, ML, Data Analysis |
 | **Suvanjan Das** | 🧠 Project Coordinator |  Data Science , Machine Learning , Seismology  |
 | **Abir Saha** | 🌍 ML Model Validator & Feature Engineer | Seismology, ML Validation, Web Development |
-| **Arja Banerjee** | 📚 Scientific Machine Learning | ML Research, Scientific Writing, Seismology |
+| **Arja Banerjee** | 📚 Scientific Machine Learning | Machine Learning, Deep Learning, Scientific Modeling, Seismology |
 | **Sayan Rana** | 📊 Data Scientist & ML Contributor | Statistics, Feature Engineering |
 | **Iqbal Shaikh** | 🎨 ML Contributor | Machine Learning, Python |
 
